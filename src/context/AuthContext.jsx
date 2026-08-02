@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { setToken, getToken } from '../api/client';
 import { useLogin, useUsuarioActual } from '../api/hooks';
 
@@ -10,6 +11,7 @@ const AuthContext = createContext(null);
 // devuelve por endpoint — esto es solo para la interfaz.
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
+  const queryClient = useQueryClient();
   const loginMutation = useLogin();
 
   // Si ya hay token (recarga de página) pero todavía no sabemos quién
@@ -35,17 +37,19 @@ export function AuthProvider({ children }) {
     async (credenciales) => {
       const data = await loginMutation.mutateAsync(credenciales);
       // data esperado: { token, usuario: { nombre, roles: [...], sucursales: [...] } }
+      queryClient.clear();
       setToken(data.token);
       setUsuario(data.usuario);
       return data.usuario;
     },
-    [loginMutation]
+    [loginMutation, queryClient]
   );
 
   const logout = useCallback(() => {
+    queryClient.clear();
     setToken(null);
     setUsuario(null);
-  }, []);
+  }, [queryClient]);
 
   const value = {
     usuario,

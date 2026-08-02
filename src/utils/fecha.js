@@ -12,3 +12,10 @@ export function hoyLocal() {
   const pad = (n) => String(n).padStart(2, '0');
   return `${ahora.getFullYear()}-${pad(ahora.getMonth() + 1)}-${pad(ahora.getDate())}`;
 }
+
+// Convierte una fecha YYYY-MM-DD (o cualquier string que empiece así) a DD/MM/YYYY para mostrar en pantalla.
+export function formatearFechaDisplay(fecha) {
+  if (!fecha) return '';
+  const [anio, mes, dia] = String(fecha).slice(0, 10).split('-');
+  return `${dia}/${mes}/${anio}`;
+}

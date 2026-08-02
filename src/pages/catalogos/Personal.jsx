@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Modal from '../../components/Modal';
 import { usePersonal, usePersonalMutation, useEmpresas, useSucursales } from '../../api/hooks';
 import { useToast } from '../../context/ToastContext';
@@ -27,6 +27,16 @@ export default function Personal() {
   const [busqueda, setBusqueda] = useState('');
   const [mostrarBajas, setMostrarBajas] = useState(false);
   const [pagina, setPagina] = useState(1);
+  const [esMovil, setEsMovil] = useState(() => window.matchMedia('(max-width: 860px)').matches);
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 860px)');
+    const onChange = () => setEsMovil(media.matches);
+    onChange();
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
+
   const personalFiltrado = (personal ?? []).filter((p) => {
     // "Mostrar dados de baja" es exclusivo: si está marcado, solo
     // inactivos; si no, solo activos (nunca mezclados).
@@ -127,19 +137,13 @@ export default function Personal() {
             </button>
           </div>
         </div>
-        <table>
-          <thead><tr><th>Código</th><th>Nombre</th><th>Puesto</th><th>Sucursal</th><th>Estado</th><th>Acciones</th></tr></thead>
-          <tbody>
+        {esMovil ? (
+          <div className="mobile-personal-list">
             {personalPagina.map((p) => (
-              <tr key={p.id}>
-                <td>{p.codigo}</td><td>{p.nombres}</td><td>{p.puesto}</td><td>{p.sucursalNombre}</td>
-                <td>
-                  <span className={`status-pill ${p.estado === 'I' ? 'warn' : 'ok'}`}>
-                    {p.estado === 'I' ? 'Dado de baja' : 'Activo'}
-                  </span>
-                </td>
-                <td style={{ whiteSpace: 'nowrap' }}>
-                  <div style={{ display: 'flex', gap: 6 }}>
+              <div key={p.id} className="mobile-personal-card">
+                <div className="mobile-personal-top">
+                  <div className="mobile-personal-code">{p.codigo}</div>
+                  <div className="mobile-personal-actions">
                     <button
                       type="button"
                       className="btn btn-ghost icon-btn"
@@ -166,11 +170,79 @@ export default function Personal() {
                       <IconoBasura />
                     </button>
                   </div>
-                </td>
-              </tr>
+                </div>
+                <div className="mobile-personal-name">{p.nombres}</div>
+                <div className="mobile-personal-meta">
+                  <span className="mobile-personal-label">CAD</span>
+                  <span className="mobile-personal-value">{p.codigoCad || p.sucursalNombre}</span>
+                </div>
+                <div className="mobile-personal-meta">
+                  <span className="mobile-personal-label">Estado</span>
+                  <span className={`status-pill ${p.estado === 'I' ? 'warn' : 'ok'}`}>
+                    {p.estado === 'I' ? 'Dado de baja' : 'Activo'}
+                  </span>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th className="col-ocultar-movil">Puesto</th>
+                <th>Sucursal</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {personalPagina.map((p) => (
+                <tr key={p.id}>
+                  <td>{p.codigo}</td>
+                  <td>{p.nombres}</td>
+                  <td className="col-ocultar-movil">{p.puesto}</td>
+                  <td>{p.sucursalNombre}</td>
+                  <td>
+                    <span className={`status-pill ${p.estado === 'I' ? 'warn' : 'ok'}`}>
+                      {p.estado === 'I' ? 'Dado de baja' : 'Activo'}
+                    </span>
+                  </td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button
+                        type="button"
+                        className="btn btn-ghost icon-btn"
+                        title="Ver información"
+                        onClick={() => setViendo(p)}
+                      >
+                        <IconoOjo />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost icon-btn"
+                        title="Editar"
+                        onClick={() => setEditando(datosFormulario(p))}
+                      >
+                        <IconoLapiz />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost icon-btn"
+                        title="Dar de baja"
+                        disabled={p.estado === 'I' || mut.darDeBaja.isPending}
+                        onClick={() => onDarBaja(p)}
+                      >
+                        <IconoBasura />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
           <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}>
             {personalFiltrado.length} registro(s) · página {paginaActual} de {totalPaginas}

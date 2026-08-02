@@ -15,7 +15,8 @@ const SECCIONES = [
     { to: '/cierre-turno', label: 'Cierre y Autorización turno', rolesExcluidos: ['Gerente'] }
   ]},
   { titulo: 'Informes', items: [
-    { to: '/informes/boleta', label: 'Boleta' }
+    { to: '/informes/boletas-cierre', label: 'Boletas cierre' },
+    { to: '/informes/asistencia', label: 'Informe de asistencia' }
   ]},
   { titulo: 'Administración', items: [
     { to: '/catalogos/empresas', label: 'Empresas y sucursales', roles: ['Admin', 'Gerente'] },

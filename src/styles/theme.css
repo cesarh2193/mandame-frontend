@@ -62,12 +62,24 @@ a{color:inherit;}
 
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
 .form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;}
+.form-grid-consulta{display:grid;grid-template-columns:repeat(4,1fr) auto auto;gap:12px;margin-bottom:12px;}
 .field label{display:block;font-size:12px;color:var(--text-2);margin-bottom:5px;font-weight:600;}
 .field input,.field select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;background:var(--input-bg);color:var(--text);}
 
 table{width:100%;border-collapse:collapse;font-size:12.5px;}
 th{text-align:left;font-size:11px;text-transform:uppercase;color:var(--text-3);padding:8px;border-bottom:1px solid var(--line);}
 td{padding:9px 8px;border-bottom:1px solid var(--line);}
+td:nth-child(2), th:nth-child(2){min-width:180px;}
+.mobile-personal-list{display:flex;flex-direction:column;gap:10px;}
+.mobile-personal-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;box-shadow:0 2px 8px rgba(15,23,42,.06);}
+.mobile-personal-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+.mobile-personal-code{font-size:12px;color:var(--text-2);font-weight:700;letter-spacing:.3px;}
+.mobile-personal-name{font-size:15px;font-weight:800;line-height:1.35;color:var(--text);}
+.mobile-personal-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;}
+.mobile-personal-actions .icon-btn{border:1px solid var(--line);background:var(--input-bg);}
+.mobile-personal-meta{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;padding-top:2px;}
+.mobile-personal-label{font-size:10.5px;text-transform:uppercase;color:var(--text-3);font-weight:800;letter-spacing:.5px;}
+.mobile-personal-value{font-size:12.5px;color:var(--text);font-weight:700;}
 
 /* mantiene visible la primera columna (ej. nombre del CAD) al
    escrolear horizontal en tablas anchas, sobre todo en móvil */
@@ -109,6 +121,14 @@ td{padding:9px 8px;border-bottom:1px solid var(--line);}
   .scope{gap:6px;}
   .scope .btn{padding:8px 10px;font-size:12px;}
 
+  table{min-width:620px;}
+  td:nth-child(2), th:nth-child(2){min-width:260px;}
+  td:nth-child(2){white-space:normal;}
+  .mobile-personal-list{gap:8px;}
+  .mobile-personal-card{padding:10px;}
+  .mobile-personal-name{font-size:14px;}
+  .mobile-personal-meta{grid-template-columns:90px 1fr;}
+
   .body-shell{position:relative;overflow:hidden;}
   .sidebar{
     position:absolute; top:0; left:0; height:100%; width:250px;
@@ -128,11 +148,14 @@ td{padding:9px 8px;border-bottom:1px solid var(--line);}
   .login-card{padding:26px 20px;}
 
   .form-grid, .form-grid-3{grid-template-columns:1fr;}
+  .form-grid-consulta{grid-template-columns:1fr;}
+  .form-grid-consulta .btn{width:100%;}
   .grid-kpi{grid-template-columns:repeat(2,1fr);}
 
   /* las tablas no se rompen: la tarjeta que las contiene scrollea horizontal */
   .card{overflow-x:auto;}
-  table{min-width:520px;}
+  table{min-width:560px;}
+  td:nth-child(2), th:nth-child(2){min-width:220px;}
 
   /* columnas secundarias que se omiten en móvil para que la captura de
      datos en pantalla se vea mejor sin tener que escrolear tanto */
