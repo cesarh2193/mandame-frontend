@@ -14,6 +14,8 @@ import CierreTurno from './pages/CierreTurno';
 import Autorizar from './pages/Autorizar';
 import Boleta from './pages/informes/Boleta';
 import AsistenciaInforme from './pages/informes/AsistenciaInforme';
+import AsistenciaGeneral from './pages/informes/AsistenciaGeneral';
+import FichaPersonalInforme from './pages/informes/FichaPersonalInforme';
 import Empresas from './pages/catalogos/Empresas';
 import Tarifas from './pages/catalogos/Tarifas';
 import Personal from './pages/catalogos/Personal';
@@ -79,6 +81,8 @@ export default function App() {
             <Route path="/informes/boleta" element={<Boleta />} />
             <Route path="/informes/boletas-cierre" element={<Boleta />} />
             <Route path="/informes/asistencia" element={<AsistenciaInforme />} />
+            <Route path="/informes/asistencia-general" element={<AsistenciaGeneral />} />
+            <Route path="/informes/ficha-personal" element={<FichaPersonalInforme />} />
             <Route
               path="/catalogos/empresas"
               element={

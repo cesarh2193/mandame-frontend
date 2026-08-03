@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { usePlanificacion, useGuardarPlanificacion } from '../api/hooks';
 import { hoyLocal } from '../utils/fecha';
 
 export default function Planificacion() {
   const { usuario } = useAuth();
+  const mostrarToast = useToast();
   const hoy = hoyLocal();
   const [fecha, setFecha] = useState(hoy);
   const [sucursalId, setSucursalId] = useState(usuario?.sucursales?.[0]?.id ?? '');
@@ -13,9 +15,18 @@ export default function Planificacion() {
   const { data: planificaciones } = usePlanificacion(fecha);
   const guardar = useGuardarPlanificacion();
 
+  const planExistente = useMemo(
+    () => planificaciones?.find((p) => String(p.sucursalId) === String(sucursalId)),
+    [planificaciones, sucursalId]
+  );
+
   function onSubmit(e) {
     e.preventDefault();
-    guardar.mutate({ sucursalId: Number(sucursalId), fecha, total: Number(total) });
+    if (planExistente) return;
+    guardar.mutate(
+      { sucursalId: Number(sucursalId), fecha, total: Number(total) },
+      { onError: (err) => mostrarToast(err?.response?.data?.error || 'No se pudo guardar la planificación.', 'error') }
+    );
   }
 
   return (
@@ -39,12 +50,27 @@ export default function Planificacion() {
           </div>
           <div className="field">
             <label>Total de motoristas a planificar</label>
-            <input type="number" min="0" value={total} onChange={(e) => setTotal(e.target.value)} required />
+            <input
+              type="number"
+              min="0"
+              value={total}
+              onChange={(e) => setTotal(e.target.value)}
+              disabled={!!planExistente}
+              required
+            />
           </div>
         </div>
-        <button className="btn btn-primary" disabled={guardar.isPending}>
-          {guardar.isPending ? 'Guardando...' : 'Guardar planificación'}
-        </button>
+
+        {planExistente ? (
+          <p style={{ color: 'var(--amber-dark)', background: 'var(--amber-light)', padding: '10px 12px', borderRadius: 8, fontSize: 12.5, marginBottom: 12 }}>
+            Ya existe una planificación para esta sucursal y fecha ({planExistente.total} motoristas, registrada por {planExistente.registradoPor || '—'}).
+            No se puede sobrescribir desde aquí.
+          </p>
+        ) : (
+          <button className="btn btn-primary" disabled={guardar.isPending}>
+            {guardar.isPending ? 'Guardando...' : 'Guardar planificación'}
+          </button>
+        )}
       </form>
 
       <div className="card">

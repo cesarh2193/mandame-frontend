@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import Modal from '../../components/Modal';
 import { useEmpresas, useEmpresasMutation, useSucursales, useSucursalesMutation, usePersonal } from '../../api/hooks';
+import { useToast } from '../../context/ToastContext';
+import { IconoBasura, IconoCheck } from '../../components/Iconos';
 
 export default function Empresas() {
+  const mostrarToast = useToast();
   const { data: empresas } = useEmpresas();
   const empresaMut = useEmpresasMutation();
   const [empresaForm, setEmpresaForm] = useState({ codigo: '', nombre: '' });
@@ -53,6 +56,36 @@ export default function Empresas() {
     }
   }
 
+  function toggleEstadoEmpresa(e) {
+    if (e.estado === 'A') {
+      const confirmado = window.confirm(`¿Dar de baja la empresa ${e.nombre}?`);
+      if (!confirmado) return;
+      empresaMut.darDeBaja.mutate(e.id, {
+        onError: (err) => mostrarToast(err?.response?.data?.error || 'No se pudo dar de baja.', 'error')
+      });
+    } else {
+      empresaMut.actualizar.mutate({ id: e.id, nombre: e.nombre, estado: 'A' }, {
+        onSuccess: () => mostrarToast(`${e.nombre} fue reactivada.`),
+        onError: (err) => mostrarToast(err?.response?.data?.error || 'No se pudo reactivar.', 'error')
+      });
+    }
+  }
+
+  function toggleEstadoSucursal(s) {
+    if (s.estado === 'A') {
+      const confirmado = window.confirm(`¿Dar de baja el CAD ${s.nombre}?`);
+      if (!confirmado) return;
+      sucursalMut.darDeBaja.mutate(s.id, {
+        onError: (err) => mostrarToast(err?.response?.data?.error || 'No se pudo dar de baja.', 'error')
+      });
+    } else {
+      sucursalMut.actualizar.mutate({ id: s.id, nombre: s.nombre, estado: 'A' }, {
+        onSuccess: () => mostrarToast(`${s.nombre} fue reactivada.`),
+        onError: (err) => mostrarToast(err?.response?.data?.error || 'No se pudo reactivar.', 'error')
+      });
+    }
+  }
+
   return (
     <div>
       <h1 className="page-title">Empresas y sucursales</h1>
@@ -77,8 +110,20 @@ export default function Empresas() {
             {empresas?.map((e) => (
               <tr key={e.id}>
                 <td>{e.codigo}</td><td>{e.nombre}</td><td>{e.supervisor ?? '—'}</td>
-                <td><span className="status-pill ok">{e.estado === 'A' ? 'Activa' : 'Inactiva'}</span></td>
-                <td><button className="btn btn-ghost" onClick={() => setEditando({ tipo: 'empresa', data: { ...e } })}>Editar</button></td>
+                <td><span className={`status-pill ${e.estado === 'A' ? 'ok' : 'warn'}`}>{e.estado === 'A' ? 'Activa' : 'Inactiva'}</span></td>
+                <td>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button className="btn btn-ghost" onClick={() => setEditando({ tipo: 'empresa', data: { ...e } })}>Editar</button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost icon-btn"
+                      title={e.estado === 'A' ? 'Dar de baja' : 'Reactivar'}
+                      onClick={() => toggleEstadoEmpresa(e)}
+                    >
+                      {e.estado === 'A' ? <IconoBasura /> : <IconoCheck />}
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -150,8 +195,20 @@ export default function Empresas() {
             {sucursalesFiltradas.map((s) => (
               <tr key={s.id}>
                 <td>{s.codigoCad}</td><td>{s.nombre}</td><td>{s.empresaNombre}</td>
-                <td><span className="status-pill ok">{s.estado === 'A' ? 'Activa' : 'Inactiva'}</span></td>
-                <td><button className="btn btn-ghost" onClick={() => setEditando({ tipo: 'sucursal', data: { ...s } })}>Editar</button></td>
+                <td><span className={`status-pill ${s.estado === 'A' ? 'ok' : 'warn'}`}>{s.estado === 'A' ? 'Activa' : 'Inactiva'}</span></td>
+                <td>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button className="btn btn-ghost" onClick={() => setEditando({ tipo: 'sucursal', data: { ...s } })}>Editar</button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost icon-btn"
+                      title={s.estado === 'A' ? 'Dar de baja' : 'Reactivar'}
+                      onClick={() => toggleEstadoSucursal(s)}
+                    >
+                      {s.estado === 'A' ? <IconoBasura /> : <IconoCheck />}
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -166,13 +223,39 @@ export default function Empresas() {
         guardando={empresaMut.actualizar.isPending || sucursalMut.actualizar.isPending}
       >
         {editando && (
-          <div className="field">
-            <label>Nombre</label>
-            <input
-              value={editando.data.nombre}
-              onChange={(e) => setEditando({ ...editando, data: { ...editando.data, nombre: e.target.value } })}
-            />
-          </div>
+          <>
+            <div className="field">
+              <label>Nombre</label>
+              <input
+                value={editando.data.nombre}
+                onChange={(e) => setEditando({ ...editando, data: { ...editando.data, nombre: e.target.value } })}
+              />
+            </div>
+
+            {editando.tipo === 'sucursal' && (
+              <>
+                <div className="field">
+                  <label>Empresa</label>
+                  <select
+                    value={editando.data.empresaId ?? ''}
+                    onChange={(e) => setEditando({ ...editando, data: { ...editando.data, empresaId: e.target.value } })}
+                  >
+                    {(empresas ?? []).map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Encargado (supervisor)</label>
+                  <select
+                    value={editando.data.supervisorId ?? ''}
+                    onChange={(e) => setEditando({ ...editando, data: { ...editando.data, supervisorId: e.target.value } })}
+                  >
+                    <option value="">Sin asignar</option>
+                    {supervisores.map((p) => <option key={p.id} value={p.id}>{p.nombres}</option>)}
+                  </select>
+                </div>
+              </>
+            )}
+          </>
         )}
       </Modal>
     </div>

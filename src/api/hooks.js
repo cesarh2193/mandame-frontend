@@ -228,6 +228,34 @@ export const useTarifasMutation = () => useCatalogoMutation('tarifas');
 export const usePersonal = () => useCatalogo('personal');
 export const usePersonalMutation = () => useCatalogoMutation('personal');
 
+export function useSubirFotoPersonal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, archivo }) => {
+      const formData = new FormData();
+      formData.append('foto', archivo);
+      return api.post(`/personal/${id}/foto`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      }).then((r) => r.data);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['personal'] })
+  });
+}
+
+export function useSubirDocumentoPersonal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, tipo, archivo }) => {
+      const formData = new FormData();
+      formData.append('documento', archivo);
+      return api.post(`/personal/${id}/documentos/${tipo}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      }).then((r) => r.data);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['personal'] })
+  });
+}
+
 export const useUsuarios = () => useCatalogo('usuarios');
 export const useUsuariosSinCuenta = () => useQuery({
   queryKey: ['personal-sin-usuario'],

@@ -39,6 +39,14 @@ export function IconoCandado() {
   );
 }
 
+export function IconoCheck() {
+  return (
+    <svg {...PROPS_ICONO}>
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
 export function IconoCandadoAbierto() {
   return (
     <svg {...PROPS_ICONO}>

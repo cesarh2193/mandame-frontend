@@ -1,19 +1,77 @@
 import { useEffect, useState } from 'react';
 import Modal from '../../components/Modal';
-import { usePersonal, usePersonalMutation, useEmpresas, useSucursales } from '../../api/hooks';
+import FotoPersonal from '../../components/FotoPersonal';
+import {
+  usePersonal, usePersonalMutation, useSubirFotoPersonal, useSubirDocumentoPersonal,
+  useEmpresas, useSucursales
+} from '../../api/hooks';
+import { api } from '../../api/client';
+import { formatearFechaDisplay } from '../../utils/fecha';
 import { useToast } from '../../context/ToastContext';
 import { IconoOjo, IconoLapiz, IconoBasura } from '../../components/Iconos';
 
 const PUESTOS = ['Motorista', 'Supervisor', 'Gerente', 'Digitador', 'Administrador'];
+const ESTADOS_CIVILES = ['Soltero/a', 'Casado/a', 'Unido/a', 'Divorciado/a', 'Viudo/a'];
+const RELACIONES_EMERGENCIA = ['Madre', 'Padre', 'Esposa', 'Esposo', 'Hijo/a', 'Hermano/a', 'Tío/a', 'Primo/a', 'Otro'];
+const BANCOS_GUATEMALA = [
+  'Banco Industrial', 'Banco G&T Continental', 'Banrural', 'BAC (Banco de América Central)',
+  'Banco Agromercantil (BAM)', 'Banco Promerica', 'Bantrab', 'Banco Ficohsa Guatemala',
+  'Banco Inmobiliario', 'Interbanco', 'CHN (Crédito Hipotecario Nacional)', 'Vivibanco', 'Banco Azteca', 'Otro'
+];
+const TIPOS_DOCUMENTO = [
+  { tipo: 'DPI', etiqueta: 'DPI' },
+  { tipo: 'RECIBO_LUZ', etiqueta: 'Recibo de luz' },
+  { tipo: 'LICENCIA', etiqueta: 'Licencia' }
+];
 const POR_PAGINA = 20;
 const FORM_VACIO = {
   codigo: '', nombres: '', apellidos: '', dpi: '', puesto: 'Motorista', empresaId: '', sucursalId: '',
-  tambienMotorista: true, tipoMotorista: 'FIJO', placa: '', licencia: ''
+  tambienMotorista: true, tipoMotorista: 'FIJO', placa: '', licencia: '',
+  telefono: '', correo: '',
+  contactoEmergenciaNombre: '', contactoEmergenciaTelefono: '', contactoEmergenciaRelacion: '',
+  numeroCuenta: '', banco: '', tipoCuenta: '',
+  igss: '', estadoCivil: '', nombreConyuge: '', nombrePadre: '', nombreMadre: '',
+  fechaInicioLabores: '', fechaFinLabores: '', seguroVida: false,
+  fotoArchivo: null,
+  docArchivos: { DPI: null, RECIBO_LUZ: null, LICENCIA: null }
 };
+
+function dpiEsValido(dpi) {
+  if (!dpi) return true; // el campo requerido se valida aparte; acá solo el formato
+  return String(dpi).replace(/\D/g, '').length === 13;
+}
+
+// Campos "extra" (no obligatorios al crear) que consideramos para medir
+// qué tan completo está el expediente de una persona. Los obligatorios
+// (código, nombres, DPI, puesto, sucursal) no cuentan: siempre están
+// completos porque el formulario no deja guardar sin ellos.
+const CAMPOS_COMPLETITUD = [
+  'telefono', 'correo',
+  'contactoEmergenciaNombre', 'contactoEmergenciaTelefono', 'contactoEmergenciaRelacion',
+  'numeroCuenta', 'banco', 'tipoCuenta',
+  'igss', 'estadoCivil', 'nombrePadre', 'nombreMadre', 'fechaInicioLabores',
+  'tieneFoto', 'tieneDocDpi', 'tieneDocReciboLuz', 'tieneDocLicencia'
+];
+
+function calcularCompletitud(p) {
+  const llenos = CAMPOS_COMPLETITUD.filter((campo) => {
+    const valor = p[campo];
+    return typeof valor === 'boolean' ? valor : !!(valor && String(valor).trim());
+  }).length;
+  return Math.round((llenos / CAMPOS_COMPLETITUD.length) * 100);
+}
+
+function colorCompletitud(porcentaje) {
+  if (porcentaje >= 80) return 'var(--teal-dark)';
+  if (porcentaje >= 50) return 'var(--amber-dark)';
+  return 'var(--coral-dark)';
+}
 
 export default function Personal() {
   const { data: personal } = usePersonal();
   const mut = usePersonalMutation();
+  const subirFoto = useSubirFotoPersonal();
+  const subirDocumento = useSubirDocumentoPersonal();
   const { data: empresas } = useEmpresas('A');
   const mostrarToast = useToast();
 
@@ -23,6 +81,11 @@ export default function Personal() {
   const [editando, setEditando] = useState(null);
   const { data: sucursalesEditar } = useSucursales(editando?.empresaId, 'A');
   const [viendo, setViendo] = useState(null);
+
+  const [emergenciaAbierta, setEmergenciaAbierta] = useState(false);
+  const [padresAbierta, setPadresAbierta] = useState(false);
+  const [bancariosAbierta, setBancariosAbierta] = useState(false);
+  const [laboralAbierta, setLaboralAbierta] = useState(false);
 
   const [busqueda, setBusqueda] = useState('');
   const [mostrarBajas, setMostrarBajas] = useState(false);
@@ -36,6 +99,11 @@ export default function Personal() {
     media.addEventListener('change', onChange);
     return () => media.removeEventListener('change', onChange);
   }, []);
+
+  // El modal principal abierto en un momento dado (crear o editar, nunca
+  // los dos a la vez) determina sobre qué objeto escriben los sub-modales
+  // de "Información de emergencia" y "Datos de los padres".
+  const activo = creando ? { valores: form, set: setForm } : editando ? { valores: editando, set: setEditando } : null;
 
   const personalFiltrado = (personal ?? []).filter((p) => {
     // "Mostrar dados de baja" es exclusivo: si está marcado, solo
@@ -72,11 +140,38 @@ export default function Personal() {
   function cerrarCreacion() {
     setCreando(false);
     setForm(FORM_VACIO);
+    setEmergenciaAbierta(false);
+    setPadresAbierta(false);
+    setBancariosAbierta(false);
+    setLaboralAbierta(false);
+  }
+
+  function cerrarEdicion() {
+    setEditando(null);
+    setEmergenciaAbierta(false);
+    setPadresAbierta(false);
+    setBancariosAbierta(false);
+    setLaboralAbierta(false);
+  }
+
+  function subirDocumentosPendientes(id, docArchivos) {
+    Object.entries(docArchivos || {}).forEach(([tipo, archivo]) => {
+      if (archivo) subirDocumento.mutate({ id, tipo, archivo });
+    });
   }
 
   function crear() {
-    mut.crear.mutate(form, {
-      onSuccess: () => {
+    if (!dpiEsValido(form.dpi)) {
+      mostrarToast('El DPI debe tener 13 dígitos.', 'error');
+      return;
+    }
+    const { fotoArchivo, docArchivos, ...payload } = form;
+    mut.crear.mutate(payload, {
+      onSuccess: (data) => {
+        if (fotoArchivo && data?.id) {
+          subirFoto.mutate({ id: data.id, archivo: fotoArchivo });
+        }
+        if (data?.id) subirDocumentosPendientes(data.id, docArchivos);
         cerrarCreacion();
         mostrarToast('Personal insertado correctamente.');
       }
@@ -84,9 +179,23 @@ export default function Personal() {
   }
 
   function guardarEdicion() {
+    if (!dpiEsValido(editando.dpi)) {
+      mostrarToast('El DPI debe tener 13 dígitos.', 'error');
+      return;
+    }
+    const { fotoArchivo, docArchivos, tieneFoto, tieneDocDpi, tieneDocReciboLuz, tieneDocLicencia, id, ...payload } = editando;
     mut.actualizar.mutate(
-      { id: editando.id, ...editando },
-      { onSuccess: () => { setEditando(null); mostrarToast('Cambios guardados correctamente.'); } }
+      { id, ...payload },
+      {
+        onSuccess: () => {
+          if (fotoArchivo) {
+            subirFoto.mutate({ id, archivo: fotoArchivo });
+          }
+          subirDocumentosPendientes(id, docArchivos);
+          cerrarEdicion();
+          mostrarToast('Cambios guardados correctamente.');
+        }
+      }
     );
   }
 
@@ -103,7 +212,29 @@ export default function Personal() {
       tipoMotorista: p.tipoMotorista || 'FIJO',
       placa: p.placa || '',
       licencia: p.licencia || '',
-      estado: p.estado || 'A'
+      estado: p.estado || 'A',
+      telefono: p.telefono || '',
+      correo: p.correo || '',
+      contactoEmergenciaNombre: p.contactoEmergenciaNombre || '',
+      contactoEmergenciaTelefono: p.contactoEmergenciaTelefono || '',
+      contactoEmergenciaRelacion: p.contactoEmergenciaRelacion || '',
+      numeroCuenta: p.numeroCuenta || '',
+      banco: p.banco || '',
+      tipoCuenta: p.tipoCuenta || '',
+      igss: p.igss || '',
+      estadoCivil: p.estadoCivil || '',
+      nombreConyuge: p.nombreConyuge || '',
+      nombrePadre: p.nombrePadre || '',
+      nombreMadre: p.nombreMadre || '',
+      fechaInicioLabores: p.fechaInicioLabores ? String(p.fechaInicioLabores).slice(0, 10) : '',
+      fechaFinLabores: p.fechaFinLabores ? String(p.fechaFinLabores).slice(0, 10) : '',
+      seguroVida: !!p.seguroVida,
+      tieneFoto: !!p.tieneFoto,
+      fotoArchivo: null,
+      tieneDocDpi: !!p.tieneDocDpi,
+      tieneDocReciboLuz: !!p.tieneDocReciboLuz,
+      tieneDocLicencia: !!p.tieneDocLicencia,
+      docArchivos: { DPI: null, RECIBO_LUZ: null, LICENCIA: null }
     };
   }
 
@@ -171,7 +302,9 @@ export default function Personal() {
                     </button>
                   </div>
                 </div>
-                <div className="mobile-personal-name">{p.nombres}</div>
+                <div className="mobile-personal-name">
+                  {p.nombres} <BadgeCompletitud persona={p} />
+                </div>
                 <div className="mobile-personal-meta">
                   <span className="mobile-personal-label">CAD</span>
                   <span className="mobile-personal-value">{p.codigoCad || p.sucursalNombre}</span>
@@ -201,7 +334,7 @@ export default function Personal() {
               {personalPagina.map((p) => (
                 <tr key={p.id}>
                   <td>{p.codigo}</td>
-                  <td>{p.nombres}</td>
+                  <td>{p.nombres} <BadgeCompletitud persona={p} /></td>
                   <td className="col-ocultar-movil">{p.puesto}</td>
                   <td>{p.sucursalNombre}</td>
                   <td>
@@ -268,26 +401,26 @@ export default function Personal() {
         </div>
       </div>
 
-      <Modal titulo="Nuevo personal" abierto={creando} onCerrar={cerrarCreacion} onGuardar={crear} guardando={mut.crear.isPending} ancho={720}>
+      <Modal titulo="Nuevo personal" abierto={creando} onCerrar={cerrarCreacion} onGuardar={crear} guardando={mut.crear.isPending} ancho={820}>
+        <FotoUploader archivo={form.fotoArchivo} onCambiar={(archivo) => setForm({ ...form, fotoArchivo: archivo })} />
+
+        <Seccion titulo="Datos personales" />
         <div className="form-grid-3">
           <div className="field">
             <label>Código (correlativo de la empresa)</label>
-            <input value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value })} required />
+            <input value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value.toUpperCase() })} required />
           </div>
           <div className="field">
             <label>Nombres</label>
-            <input value={form.nombres} onChange={(e) => setForm({ ...form, nombres: e.target.value })} required />
+            <input value={form.nombres} onChange={(e) => setForm({ ...form, nombres: e.target.value.toUpperCase() })} required />
           </div>
           <div className="field">
             <label>Apellidos</label>
-            <input value={form.apellidos} onChange={(e) => setForm({ ...form, apellidos: e.target.value })} required />
+            <input value={form.apellidos} onChange={(e) => setForm({ ...form, apellidos: e.target.value.toUpperCase() })} required />
           </div>
         </div>
         <div className="form-grid-3">
-          <div className="field">
-            <label>DPI</label>
-            <input value={form.dpi} onChange={(e) => setForm({ ...form, dpi: e.target.value })} required />
-          </div>
+          <CampoDpi valor={form.dpi} onChange={(v) => setForm({ ...form, dpi: v })} />
           <div className="field">
             <label>Puesto</label>
             <select value={form.puesto} onChange={(e) => onPuestoChange(e.target.value)}>
@@ -306,6 +439,55 @@ export default function Personal() {
             </label>
           </div>
         </div>
+        <div className="form-grid">
+          <div className="field">
+            <label>Teléfono</label>
+            <input value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value.toUpperCase() })} />
+          </div>
+          <div className="field">
+            <label>Correo electrónico</label>
+            <input type="email" value={form.correo} onChange={(e) => setForm({ ...form, correo: e.target.value })} />
+          </div>
+        </div>
+
+        <Seccion titulo="Información adicional" />
+        <div className="form-grid-4">
+          <BotonSubmodal
+            etiqueta="Información de emergencia"
+            lleno={!!form.contactoEmergenciaNombre}
+            onClick={() => setEmergenciaAbierta(true)}
+          />
+          <BotonSubmodal
+            etiqueta="Datos bancarios"
+            lleno={!!(form.numeroCuenta || form.banco)}
+            onClick={() => setBancariosAbierta(true)}
+          />
+          <BotonSubmodal
+            etiqueta="Información laboral y personal"
+            lleno={!!(form.igss || form.estadoCivil || form.fechaInicioLabores)}
+            onClick={() => setLaboralAbierta(true)}
+          />
+          <BotonSubmodal
+            etiqueta="Datos de los padres"
+            lleno={!!(form.nombrePadre || form.nombreMadre)}
+            onClick={() => setPadresAbierta(true)}
+          />
+        </div>
+
+        <Seccion titulo="Documentos" />
+        <div className="form-grid-3">
+          {TIPOS_DOCUMENTO.map(({ tipo, etiqueta }) => (
+            <DocumentoField
+              key={tipo}
+              tipo={tipo}
+              etiqueta={etiqueta}
+              archivoLocal={form.docArchivos[tipo]}
+              onCambiar={(archivo) => setForm({ ...form, docArchivos: { ...form.docArchivos, [tipo]: archivo } })}
+            />
+          ))}
+        </div>
+
+        <Seccion titulo="Ubicación" />
         <div className="form-grid">
           <div className="field">
             <label>Empresa</label>
@@ -334,11 +516,11 @@ export default function Personal() {
             </div>
             <div className="field">
               <label>Placa asignada</label>
-              <input value={form.placa} onChange={(e) => setForm({ ...form, placa: e.target.value })} />
+              <input value={form.placa} onChange={(e) => setForm({ ...form, placa: e.target.value.toUpperCase() })} />
             </div>
             <div className="field">
               <label>Licencia de conducir</label>
-              <input value={form.licencia} onChange={(e) => setForm({ ...form, licencia: e.target.value })} />
+              <input value={form.licencia} onChange={(e) => setForm({ ...form, licencia: e.target.value.toUpperCase() })} />
             </div>
           </div>
         )}
@@ -350,9 +532,14 @@ export default function Personal() {
         )}
       </Modal>
 
-      <Modal titulo="Información del personal" abierto={!!viendo} onCerrar={() => setViendo(null)} ancho={720} soloLectura>
+      <Modal titulo="Información del personal" abierto={!!viendo} onCerrar={() => setViendo(null)} ancho={820} soloLectura>
         {viendo && (
           <>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+              <FotoPersonal personaId={viendo.id} tieneFoto={viendo.tieneFoto} tamano={110} />
+            </div>
+
+            <Seccion titulo="Datos personales" />
             <div className="form-grid-3">
               <Campo label="Código" valor={viendo.codigo} />
               <Campo label="Nombre completo" valor={viendo.nombres} />
@@ -363,12 +550,66 @@ export default function Personal() {
               <Campo label="Sucursal (CAD)" valor={viendo.sucursalNombre} />
               <Campo label="Estado" valor={viendo.estado === 'I' ? 'Dado de baja' : 'Activo'} />
             </div>
+            <div className="form-grid-3">
+              <Campo label="Teléfono" valor={viendo.telefono} />
+              <Campo label="Correo electrónico" valor={viendo.correo} />
+            </div>
+            <div className="form-grid-3">
+              <Campo label="Contacto de emergencia" valor={viendo.contactoEmergenciaNombre} />
+              <Campo label="Teléfono de emergencia" valor={viendo.contactoEmergenciaTelefono} />
+              <Campo label="Relación" valor={viendo.contactoEmergenciaRelacion} />
+            </div>
+
+            <Seccion titulo="Datos bancarios" />
+            <div className="form-grid-3">
+              <Campo label="Número de cuenta" valor={viendo.numeroCuenta} />
+              <Campo label="Banco" valor={viendo.banco} />
+              <Campo label="Tipo de cuenta" valor={viendo.tipoCuenta} />
+            </div>
+
+            <Seccion titulo="Información laboral y personal" />
+            <div className="form-grid-3">
+              <Campo label="IGSS" valor={viendo.igss} />
+              <Campo label="Estado civil" valor={viendo.estadoCivil} />
+              <Campo label="Nombre del cónyuge" valor={viendo.nombreConyuge} />
+            </div>
+            <div className="form-grid-3">
+              <Campo label="Fecha inicio de labores" valor={viendo.fechaInicioLabores ? formatearFechaDisplay(viendo.fechaInicioLabores) : ''} />
+              <Campo label="Fecha finaliza labores" valor={viendo.fechaFinLabores ? formatearFechaDisplay(viendo.fechaFinLabores) : ''} />
+              <Campo label="Seguro de vida" valor={viendo.seguroVida ? 'Sí' : 'No'} />
+            </div>
+            <div className="form-grid-3">
+              <Campo label="Nombre del padre" valor={viendo.nombrePadre} />
+              <Campo label="Nombre de la madre" valor={viendo.nombreMadre} />
+            </div>
+
+            <Seccion titulo="Documentos" />
+            <div className="form-grid-3">
+              {TIPOS_DOCUMENTO.map(({ tipo, etiqueta }) => (
+                <DocumentoField
+                  key={tipo}
+                  tipo={tipo}
+                  etiqueta={etiqueta}
+                  personaId={viendo.id}
+                  subido={
+                    tipo === 'DPI' ? viendo.tieneDocDpi
+                      : tipo === 'RECIBO_LUZ' ? viendo.tieneDocReciboLuz
+                        : viendo.tieneDocLicencia
+                  }
+                  soloLectura
+                />
+              ))}
+            </div>
+
             {viendo.tambienMotorista && (
-              <div className="form-grid-3">
-                <Campo label="Tipo de motorista" valor={viendo.tipoMotorista === 'TURNO' ? 'Turno (sáb-dom)' : 'Fijo'} />
-                <Campo label="Placa asignada" valor={viendo.placa || '—'} />
-                <Campo label="Licencia de conducir" valor={viendo.licencia || '—'} />
-              </div>
+              <>
+                <Seccion titulo="Datos de motorista" />
+                <div className="form-grid-3">
+                  <Campo label="Tipo de motorista" valor={viendo.tipoMotorista === 'TURNO' ? 'Turno (sáb-dom)' : 'Fijo'} />
+                  <Campo label="Placa asignada" valor={viendo.placa || '—'} />
+                  <Campo label="Licencia de conducir" valor={viendo.licencia || '—'} />
+                </div>
+              </>
             )}
           </>
         )}
@@ -377,21 +618,29 @@ export default function Personal() {
       <Modal
         titulo="Editar personal"
         abierto={!!editando}
-        onCerrar={() => setEditando(null)}
+        onCerrar={cerrarEdicion}
         onGuardar={guardarEdicion}
         guardando={mut.actualizar.isPending}
-        ancho={720}
+        ancho={820}
       >
         {editando && (
           <>
+            <FotoUploader
+              archivo={editando.fotoArchivo}
+              tieneFotoGuardada={editando.tieneFoto}
+              personaId={editando.id}
+              onCambiar={(archivo) => setEditando({ ...editando, fotoArchivo: archivo })}
+            />
+
+            <Seccion titulo="Datos personales" />
             <div className="form-grid-3">
               <div className="field">
                 <label>Nombres</label>
-                <input value={editando.nombres} onChange={(e) => setEditando({ ...editando, nombres: e.target.value })} />
+                <input value={editando.nombres} onChange={(e) => setEditando({ ...editando, nombres: e.target.value.toUpperCase() })} />
               </div>
               <div className="field">
                 <label>Apellidos</label>
-                <input value={editando.apellidos} onChange={(e) => setEditando({ ...editando, apellidos: e.target.value })} />
+                <input value={editando.apellidos} onChange={(e) => setEditando({ ...editando, apellidos: e.target.value.toUpperCase() })} />
               </div>
               <div className="field">
                 <label>Estado</label>
@@ -402,10 +651,7 @@ export default function Personal() {
               </div>
             </div>
             <div className="form-grid-3">
-              <div className="field">
-                <label>DPI</label>
-                <input value={editando.dpi} onChange={(e) => setEditando({ ...editando, dpi: e.target.value })} />
-              </div>
+              <CampoDpi valor={editando.dpi} onChange={(v) => setEditando({ ...editando, dpi: v })} />
               <div className="field">
                 <label>Puesto</label>
                 <select
@@ -430,6 +676,61 @@ export default function Personal() {
                 </label>
               </div>
             </div>
+            <div className="form-grid">
+              <div className="field">
+                <label>Teléfono</label>
+                <input value={editando.telefono} onChange={(e) => setEditando({ ...editando, telefono: e.target.value.toUpperCase() })} />
+              </div>
+              <div className="field">
+                <label>Correo electrónico</label>
+                <input type="email" value={editando.correo} onChange={(e) => setEditando({ ...editando, correo: e.target.value })} />
+              </div>
+            </div>
+
+            <Seccion titulo="Información adicional" />
+            <div className="form-grid-4">
+              <BotonSubmodal
+                etiqueta="Información de emergencia"
+                lleno={!!editando.contactoEmergenciaNombre}
+                onClick={() => setEmergenciaAbierta(true)}
+              />
+              <BotonSubmodal
+                etiqueta="Datos bancarios"
+                lleno={!!(editando.numeroCuenta || editando.banco)}
+                onClick={() => setBancariosAbierta(true)}
+              />
+              <BotonSubmodal
+                etiqueta="Información laboral y personal"
+                lleno={!!(editando.igss || editando.estadoCivil || editando.fechaInicioLabores)}
+                onClick={() => setLaboralAbierta(true)}
+              />
+              <BotonSubmodal
+                etiqueta="Datos de los padres"
+                lleno={!!(editando.nombrePadre || editando.nombreMadre)}
+                onClick={() => setPadresAbierta(true)}
+              />
+            </div>
+
+            <Seccion titulo="Documentos" />
+            <div className="form-grid-3">
+              {TIPOS_DOCUMENTO.map(({ tipo, etiqueta }) => (
+                <DocumentoField
+                  key={tipo}
+                  tipo={tipo}
+                  etiqueta={etiqueta}
+                  personaId={editando.id}
+                  subido={
+                    tipo === 'DPI' ? editando.tieneDocDpi
+                      : tipo === 'RECIBO_LUZ' ? editando.tieneDocReciboLuz
+                        : editando.tieneDocLicencia
+                  }
+                  archivoLocal={editando.docArchivos[tipo]}
+                  onCambiar={(archivo) => setEditando({ ...editando, docArchivos: { ...editando.docArchivos, [tipo]: archivo } })}
+                />
+              ))}
+            </div>
+
+            <Seccion titulo="Ubicación" />
             <div className="form-grid">
               <div className="field">
                 <label>Empresa</label>
@@ -464,11 +765,11 @@ export default function Personal() {
                 </div>
                 <div className="field">
                   <label>Placa asignada</label>
-                  <input value={editando.placa} onChange={(e) => setEditando({ ...editando, placa: e.target.value })} />
+                  <input value={editando.placa} onChange={(e) => setEditando({ ...editando, placa: e.target.value.toUpperCase() })} />
                 </div>
                 <div className="field">
                   <label>Licencia de conducir</label>
-                  <input value={editando.licencia} onChange={(e) => setEditando({ ...editando, licencia: e.target.value })} />
+                  <input value={editando.licencia} onChange={(e) => setEditando({ ...editando, licencia: e.target.value.toUpperCase() })} />
                 </div>
               </div>
             )}
@@ -480,6 +781,201 @@ export default function Personal() {
           </>
         )}
       </Modal>
+
+      <Modal
+        titulo="Información de emergencia"
+        abierto={emergenciaAbierta}
+        onCerrar={() => setEmergenciaAbierta(false)}
+        onGuardar={() => setEmergenciaAbierta(false)}
+        ancho={520}
+      >
+        {activo && (
+          <>
+            <div className="field">
+              <label>Nombre completo del contacto</label>
+              <input
+                value={activo.valores.contactoEmergenciaNombre}
+                onChange={(e) => activo.set({ ...activo.valores, contactoEmergenciaNombre: e.target.value.toUpperCase() })}
+              />
+            </div>
+            <div className="form-grid">
+              <div className="field">
+                <label>Teléfono</label>
+                <input
+                  value={activo.valores.contactoEmergenciaTelefono}
+                  onChange={(e) => activo.set({ ...activo.valores, contactoEmergenciaTelefono: e.target.value.toUpperCase() })}
+                />
+              </div>
+              <div className="field">
+                <label>Relación</label>
+                <select
+                  value={activo.valores.contactoEmergenciaRelacion}
+                  onChange={(e) => activo.set({ ...activo.valores, contactoEmergenciaRelacion: e.target.value })}
+                >
+                  <option value="">Selecciona...</option>
+                  {RELACIONES_EMERGENCIA.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+            </div>
+          </>
+        )}
+      </Modal>
+
+      <Modal
+        titulo="Datos de los padres"
+        abierto={padresAbierta}
+        onCerrar={() => setPadresAbierta(false)}
+        onGuardar={() => setPadresAbierta(false)}
+        ancho={520}
+      >
+        {activo && (
+          <>
+            <div className="field">
+              <label>Nombre del padre</label>
+              <input
+                value={activo.valores.nombrePadre}
+                onChange={(e) => activo.set({ ...activo.valores, nombrePadre: e.target.value.toUpperCase() })}
+              />
+            </div>
+            <div className="field">
+              <label>Nombre de la madre</label>
+              <input
+                value={activo.valores.nombreMadre}
+                onChange={(e) => activo.set({ ...activo.valores, nombreMadre: e.target.value.toUpperCase() })}
+              />
+            </div>
+          </>
+        )}
+      </Modal>
+
+      <Modal
+        titulo="Datos bancarios"
+        abierto={bancariosAbierta}
+        onCerrar={() => setBancariosAbierta(false)}
+        onGuardar={() => setBancariosAbierta(false)}
+        ancho={560}
+      >
+        {activo && (
+          <div className="form-grid-3">
+            <div className="field">
+              <label>Número de cuenta</label>
+              <input
+                value={activo.valores.numeroCuenta}
+                onChange={(e) => activo.set({ ...activo.valores, numeroCuenta: e.target.value.toUpperCase() })}
+              />
+            </div>
+            <div className="field">
+              <label>Banco</label>
+              <select
+                value={activo.valores.banco}
+                onChange={(e) => activo.set({ ...activo.valores, banco: e.target.value })}
+              >
+                <option value="">Selecciona...</option>
+                {BANCOS_GUATEMALA.map((b) => <option key={b} value={b}>{b}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label>Tipo de cuenta</label>
+              <select
+                value={activo.valores.tipoCuenta}
+                onChange={(e) => activo.set({ ...activo.valores, tipoCuenta: e.target.value })}
+              >
+                <option value="">Selecciona...</option>
+                <option value="Monetaria">Monetaria</option>
+                <option value="Ahorro">Ahorro</option>
+              </select>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        titulo="Información laboral y personal"
+        abierto={laboralAbierta}
+        onCerrar={() => setLaboralAbierta(false)}
+        onGuardar={() => setLaboralAbierta(false)}
+        ancho={620}
+      >
+        {activo && (
+          <>
+            <div className="form-grid-3">
+              <div className="field">
+                <label>IGSS</label>
+                <input
+                  value={activo.valores.igss}
+                  onChange={(e) => activo.set({ ...activo.valores, igss: e.target.value.toUpperCase() })}
+                />
+              </div>
+              <div className="field">
+                <label>Estado civil</label>
+                <select
+                  value={activo.valores.estadoCivil}
+                  onChange={(e) => activo.set({ ...activo.valores, estadoCivil: e.target.value })}
+                >
+                  <option value="">Selecciona...</option>
+                  {ESTADOS_CIVILES.map((e) => <option key={e} value={e}>{e}</option>)}
+                </select>
+              </div>
+              <div className="field">
+                <label>Nombre del cónyuge (opcional)</label>
+                <input
+                  value={activo.valores.nombreConyuge}
+                  onChange={(e) => activo.set({ ...activo.valores, nombreConyuge: e.target.value.toUpperCase() })}
+                />
+              </div>
+            </div>
+            <div className="form-grid-3">
+              <div className="field">
+                <label>Fecha inicio de labores</label>
+                <input
+                  type="date"
+                  value={activo.valores.fechaInicioLabores}
+                  onChange={(e) => activo.set({ ...activo.valores, fechaInicioLabores: e.target.value })}
+                />
+              </div>
+              <div className="field">
+                <label>Fecha finaliza labores</label>
+                <input
+                  type="date"
+                  value={activo.valores.fechaFinLabores}
+                  onChange={(e) => activo.set({ ...activo.valores, fechaFinLabores: e.target.value })}
+                />
+              </div>
+              <div className="field" style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 9 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={activo.valores.seguroVida}
+                    onChange={(e) => activo.set({ ...activo.valores, seguroVida: e.target.checked })}
+                  />
+                  Tiene seguro de vida
+                </label>
+              </div>
+            </div>
+          </>
+        )}
+      </Modal>
+    </div>
+  );
+}
+
+function CampoDpi({ valor, onChange }) {
+  const invalido = valor && String(valor).replace(/\D/g, '').length !== 13;
+  return (
+    <div className="field">
+      <label>DPI</label>
+      <input
+        value={valor}
+        onChange={(e) => onChange(e.target.value.toUpperCase())}
+        maxLength={20}
+        required
+        style={invalido ? { borderColor: 'var(--coral-dark)' } : undefined}
+      />
+      {invalido && (
+        <span style={{ display: 'block', color: 'var(--coral-dark)', fontSize: 11.5, marginTop: 4 }}>
+          El DPI debe tener 13 dígitos.
+        </span>
+      )}
     </div>
   );
 }
@@ -488,8 +984,117 @@ function Campo({ label, valor }) {
   return (
     <div className="field">
       <label>{label}</label>
-      <input value={valor ?? '—'} disabled />
+      <input value={valor || '—'} disabled />
     </div>
   );
 }
 
+function Seccion({ titulo }) {
+  return (
+    <h4
+      style={{
+        color: 'var(--teal-dark)', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.3,
+        borderBottom: '1px solid var(--line)', paddingBottom: 6, margin: '18px 0 12px'
+      }}
+    >
+      {titulo}
+    </h4>
+  );
+}
+
+// Indicador de expediente incompleto: no agrega una columna nueva a la
+// tabla, va pegado al nombre y usa color + porcentaje para saltar a la
+// vista sin tener que abrir cada registro.
+function BadgeCompletitud({ persona }) {
+  const porcentaje = calcularCompletitud(persona);
+  return (
+    <span
+      title={`Expediente ${porcentaje}% completo`}
+      style={{ color: colorCompletitud(porcentaje), fontSize: 11.5, fontWeight: 700, whiteSpace: 'nowrap' }}
+    >
+      ({porcentaje}%)
+    </span>
+  );
+}
+
+function BotonSubmodal({ etiqueta, lleno, onClick }) {
+  return (
+    <button type="button" className={`btn btn-submodal${lleno ? ' lleno' : ''}`} style={{ width: '100%' }} onClick={onClick}>
+      {lleno ? '✓ ' : ''}{etiqueta}
+    </button>
+  );
+}
+
+function FotoUploader({ archivo, tieneFotoGuardada, personaId, onCambiar }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 6 }}>
+      <FotoPersonal personaId={personaId} tieneFoto={tieneFotoGuardada} archivoLocal={archivo} tamano={80} />
+      <div style={{ display: 'flex', gap: 8 }}>
+        <label className="btn btn-ghost" style={{ cursor: 'pointer' }}>
+          {archivo || tieneFotoGuardada ? 'Cambiar foto' : 'Subir foto'}
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            style={{ display: 'none' }}
+            onChange={(e) => onCambiar(e.target.files?.[0] || null)}
+          />
+        </label>
+        {archivo && (
+          <button type="button" className="btn btn-ghost" onClick={() => onCambiar(null)}>
+            Quitar
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Documentos (DPI, recibo de luz, licencia): a diferencia de la foto,
+// pueden ser PDF, así que en vez de previsualizar inline se descargan
+// como blob (respetando el token de sesión) y se abren en una pestaña
+// nueva — el navegador decide cómo mostrar cada tipo de archivo.
+function DocumentoField({ tipo, etiqueta, personaId, subido, archivoLocal, onCambiar, soloLectura }) {
+  const [cargando, setCargando] = useState(false);
+  const mostrarToast = useToast();
+
+  async function verDocumento() {
+    setCargando(true);
+    try {
+      const res = await api.get(`/personal/${personaId}/documentos/${tipo}`, { responseType: 'blob' });
+      const url = URL.createObjectURL(res.data);
+      window.open(url, '_blank');
+    } catch {
+      mostrarToast('No se pudo abrir el documento.', 'error');
+    } finally {
+      setCargando(false);
+    }
+  }
+
+  return (
+    <div className="field">
+      <label>{etiqueta}</label>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        {!soloLectura && (
+          <label className="btn btn-ghost" style={{ cursor: 'pointer' }}>
+            {archivoLocal ? 'Cambiar archivo' : subido ? 'Reemplazar' : 'Subir'}
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,application/pdf"
+              style={{ display: 'none' }}
+              onChange={(e) => onCambiar(e.target.files?.[0] || null)}
+            />
+          </label>
+        )}
+        {subido && personaId && (
+          <button type="button" className="btn btn-ghost" onClick={verDocumento} disabled={cargando}>
+            {cargando ? 'Abriendo...' : 'Ver'}
+          </button>
+        )}
+        {!subido && soloLectura && <span style={{ fontSize: 12.5, color: 'var(--text-3)' }}>No adjuntado</span>}
+        {archivoLocal && (
+          <span style={{ fontSize: 11.5, color: 'var(--text-2)' }}>{archivoLocal.name}</span>
+        )}
+      </div>
+    </div>
+  );
+}

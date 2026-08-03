@@ -16,7 +16,9 @@ const SECCIONES = [
   ]},
   { titulo: 'Informes', items: [
     { to: '/informes/boletas-cierre', label: 'Boletas cierre' },
-    { to: '/informes/asistencia', label: 'Informe de asistencia' }
+    { to: '/informes/asistencia', label: 'Informe de asistencia' },
+    { to: '/informes/asistencia-general', label: 'Asistencia general' },
+    { to: '/informes/ficha-personal', label: 'Ficha de personal' }
   ]},
   { titulo: 'Administración', items: [
     { to: '/catalogos/empresas', label: 'Empresas y sucursales', roles: ['Admin', 'Gerente'] },
