@@ -175,8 +175,8 @@ export default function AsistenciaInforme() {
             <table>
               <thead>
                 <tr>
-                  <th>Fecha</th>
-                  <th>Día</th>
+                  <th style={{ width: '13%', whiteSpace: 'nowrap' }}>Fecha</th>
+                  <th style={{ width: '11%', whiteSpace: 'nowrap' }}>Día</th>
                   <th>Hora Entrada</th>
                   <th>Hora Salida</th>
                   <th>Total Horas</th>

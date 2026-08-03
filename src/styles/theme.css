@@ -125,9 +125,6 @@ td:nth-child(2), th:nth-child(2){min-width:180px;}
   .scope{gap:6px;}
   .scope .btn{padding:8px 10px;font-size:12px;}
 
-  table{min-width:620px;}
-  td:nth-child(2), th:nth-child(2){min-width:260px;}
-  td:nth-child(2){white-space:normal;}
   .mobile-personal-list{gap:8px;}
   .mobile-personal-card{padding:10px;}
   .mobile-personal-name{font-size:14px;}
@@ -156,12 +153,21 @@ td:nth-child(2), th:nth-child(2){min-width:180px;}
   .form-grid-consulta .btn{width:100%;}
   .grid-kpi{grid-template-columns:repeat(2,1fr);}
 
-  /* las tablas no se rompen: la tarjeta que las contiene scrollea horizontal */
+  /* las tablas no se rompen: la tarjeta que las contiene scrollea
+     horizontal si hace falta. Ojo: NO forzar un ancho mínimo por
+     posición de columna (ej. "columna 2") — cada tabla tiene un
+     contenido distinto ahí (Nombre, Tipo, Día...) y forzarlo infla
+     columnas cortas sin necesidad, empujando el resto fuera de vista. */
   .card{overflow-x:auto;}
-  table{min-width:560px;}
-  td:nth-child(2), th:nth-child(2){min-width:220px;}
+  table{min-width:480px;}
 
   /* columnas secundarias que se omiten en móvil para que la captura de
      datos en pantalla se vea mejor sin tener que escrolear tanto */
   .col-ocultar-movil{display:none;}
+
+  /* los campos de formulario deben medir al menos 16px en móvil: por
+     debajo de eso, iOS Safari hace zoom automático al enfocarlos y no
+     vuelve a alejar la vista sola — el usuario queda con la pantalla
+     "grande" hasta que la ajusta a mano. */
+  .field input, .field select, .field textarea { font-size: 16px; }
 }

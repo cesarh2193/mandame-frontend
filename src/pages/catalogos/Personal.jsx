@@ -450,43 +450,6 @@ export default function Personal() {
           </div>
         </div>
 
-        <Seccion titulo="Información adicional" />
-        <div className="form-grid-4">
-          <BotonSubmodal
-            etiqueta="Información de emergencia"
-            lleno={!!form.contactoEmergenciaNombre}
-            onClick={() => setEmergenciaAbierta(true)}
-          />
-          <BotonSubmodal
-            etiqueta="Datos bancarios"
-            lleno={!!(form.numeroCuenta || form.banco)}
-            onClick={() => setBancariosAbierta(true)}
-          />
-          <BotonSubmodal
-            etiqueta="Información laboral y personal"
-            lleno={!!(form.igss || form.estadoCivil || form.fechaInicioLabores)}
-            onClick={() => setLaboralAbierta(true)}
-          />
-          <BotonSubmodal
-            etiqueta="Datos de los padres"
-            lleno={!!(form.nombrePadre || form.nombreMadre)}
-            onClick={() => setPadresAbierta(true)}
-          />
-        </div>
-
-        <Seccion titulo="Documentos" />
-        <div className="form-grid-3">
-          {TIPOS_DOCUMENTO.map(({ tipo, etiqueta }) => (
-            <DocumentoField
-              key={tipo}
-              tipo={tipo}
-              etiqueta={etiqueta}
-              archivoLocal={form.docArchivos[tipo]}
-              onCambiar={(archivo) => setForm({ ...form, docArchivos: { ...form.docArchivos, [tipo]: archivo } })}
-            />
-          ))}
-        </div>
-
         <Seccion titulo="Ubicación" />
         <div className="form-grid">
           <div className="field">
@@ -524,6 +487,43 @@ export default function Personal() {
             </div>
           </div>
         )}
+
+        <Seccion titulo="Información adicional" />
+        <div className="form-grid-4">
+          <BotonSubmodal
+            etiqueta="Información de emergencia"
+            lleno={!!form.contactoEmergenciaNombre}
+            onClick={() => setEmergenciaAbierta(true)}
+          />
+          <BotonSubmodal
+            etiqueta="Datos bancarios"
+            lleno={!!(form.numeroCuenta || form.banco)}
+            onClick={() => setBancariosAbierta(true)}
+          />
+          <BotonSubmodal
+            etiqueta="Información laboral y personal"
+            lleno={!!(form.igss || form.estadoCivil || form.fechaInicioLabores)}
+            onClick={() => setLaboralAbierta(true)}
+          />
+          <BotonSubmodal
+            etiqueta="Datos de los padres"
+            lleno={!!(form.nombrePadre || form.nombreMadre)}
+            onClick={() => setPadresAbierta(true)}
+          />
+        </div>
+
+        <Seccion titulo="Documentos" />
+        <div className="form-grid-3">
+          {TIPOS_DOCUMENTO.map(({ tipo, etiqueta }) => (
+            <DocumentoField
+              key={tipo}
+              tipo={tipo}
+              etiqueta={etiqueta}
+              archivoLocal={form.docArchivos[tipo]}
+              onCambiar={(archivo) => setForm({ ...form, docArchivos: { ...form.docArchivos, [tipo]: archivo } })}
+            />
+          ))}
+        </div>
 
         {mut.crear.isError && (
           <p style={{ color: 'var(--coral-dark)', background: 'var(--coral-light)', padding: '10px 12px', borderRadius: 8, fontSize: 12.5, marginTop: 4 }}>
@@ -687,49 +687,6 @@ export default function Personal() {
               </div>
             </div>
 
-            <Seccion titulo="Información adicional" />
-            <div className="form-grid-4">
-              <BotonSubmodal
-                etiqueta="Información de emergencia"
-                lleno={!!editando.contactoEmergenciaNombre}
-                onClick={() => setEmergenciaAbierta(true)}
-              />
-              <BotonSubmodal
-                etiqueta="Datos bancarios"
-                lleno={!!(editando.numeroCuenta || editando.banco)}
-                onClick={() => setBancariosAbierta(true)}
-              />
-              <BotonSubmodal
-                etiqueta="Información laboral y personal"
-                lleno={!!(editando.igss || editando.estadoCivil || editando.fechaInicioLabores)}
-                onClick={() => setLaboralAbierta(true)}
-              />
-              <BotonSubmodal
-                etiqueta="Datos de los padres"
-                lleno={!!(editando.nombrePadre || editando.nombreMadre)}
-                onClick={() => setPadresAbierta(true)}
-              />
-            </div>
-
-            <Seccion titulo="Documentos" />
-            <div className="form-grid-3">
-              {TIPOS_DOCUMENTO.map(({ tipo, etiqueta }) => (
-                <DocumentoField
-                  key={tipo}
-                  tipo={tipo}
-                  etiqueta={etiqueta}
-                  personaId={editando.id}
-                  subido={
-                    tipo === 'DPI' ? editando.tieneDocDpi
-                      : tipo === 'RECIBO_LUZ' ? editando.tieneDocReciboLuz
-                        : editando.tieneDocLicencia
-                  }
-                  archivoLocal={editando.docArchivos[tipo]}
-                  onCambiar={(archivo) => setEditando({ ...editando, docArchivos: { ...editando.docArchivos, [tipo]: archivo } })}
-                />
-              ))}
-            </div>
-
             <Seccion titulo="Ubicación" />
             <div className="form-grid">
               <div className="field">
@@ -773,6 +730,49 @@ export default function Personal() {
                 </div>
               </div>
             )}
+
+            <Seccion titulo="Información adicional" />
+            <div className="form-grid-4">
+              <BotonSubmodal
+                etiqueta="Información de emergencia"
+                lleno={!!editando.contactoEmergenciaNombre}
+                onClick={() => setEmergenciaAbierta(true)}
+              />
+              <BotonSubmodal
+                etiqueta="Datos bancarios"
+                lleno={!!(editando.numeroCuenta || editando.banco)}
+                onClick={() => setBancariosAbierta(true)}
+              />
+              <BotonSubmodal
+                etiqueta="Información laboral y personal"
+                lleno={!!(editando.igss || editando.estadoCivil || editando.fechaInicioLabores)}
+                onClick={() => setLaboralAbierta(true)}
+              />
+              <BotonSubmodal
+                etiqueta="Datos de los padres"
+                lleno={!!(editando.nombrePadre || editando.nombreMadre)}
+                onClick={() => setPadresAbierta(true)}
+              />
+            </div>
+
+            <Seccion titulo="Documentos" />
+            <div className="form-grid-3">
+              {TIPOS_DOCUMENTO.map(({ tipo, etiqueta }) => (
+                <DocumentoField
+                  key={tipo}
+                  tipo={tipo}
+                  etiqueta={etiqueta}
+                  personaId={editando.id}
+                  subido={
+                    tipo === 'DPI' ? editando.tieneDocDpi
+                      : tipo === 'RECIBO_LUZ' ? editando.tieneDocReciboLuz
+                        : editando.tieneDocLicencia
+                  }
+                  archivoLocal={editando.docArchivos[tipo]}
+                  onCambiar={(archivo) => setEditando({ ...editando, docArchivos: { ...editando.docArchivos, [tipo]: archivo } })}
+                />
+              ))}
+            </div>
             {mut.actualizar.isError && (
               <p style={{ color: 'var(--coral-dark)', background: 'var(--coral-light)', padding: '10px 12px', borderRadius: 8, fontSize: 12.5 }}>
                 No se pudo guardar: {mut.actualizar.error?.response?.data?.error || mut.actualizar.error?.message || 'error desconocido'}.

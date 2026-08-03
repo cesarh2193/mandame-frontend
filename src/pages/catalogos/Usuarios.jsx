@@ -217,14 +217,14 @@ export default function Usuarios() {
         <table>
           <thead>
             <tr>
-              <th>Usuario</th><th>Nombre</th><th className="col-ocultar-movil">Correo</th><th className="col-ocultar-movil">Roles</th>
+              <th>Usuario</th><th className="col-ocultar-movil">Nombre</th><th className="col-ocultar-movil">Correo</th><th className="col-ocultar-movil">Roles</th>
               <th>CAD asignados</th><th>Estado</th><th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {usuariosPagina.map((u) => (
               <tr key={u.id}>
-                <td>{u.usuario}</td><td>{u.nombre}</td><td className="col-ocultar-movil">{u.correo}</td>
+                <td>{u.usuario}</td><td className="col-ocultar-movil">{u.nombre}</td><td className="col-ocultar-movil">{u.correo}</td>
                 <td className="col-ocultar-movil">{u.roles.map(etiquetaRol).join(', ')}</td>
                 <td>{u.sucursales?.length ? u.sucursales.map((s) => s.nombre).join(', ') : '—'}</td>
                 <td>
