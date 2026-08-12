@@ -12,6 +12,7 @@ export default function AsistenciaGeneral() {
   const [sucursalId, setSucursalId] = useState('');
   const [buscando, setBuscando] = useState(false);
   const [generando, setGenerando] = useState(false);
+  const [generandoExcel, setGenerandoExcel] = useState(false);
   const [filas, setFilas] = useState(null);
 
   async function buscar() {
@@ -59,6 +60,31 @@ export default function AsistenciaGeneral() {
     }
   }
 
+  async function exportarExcel() {
+    if (!fecha) {
+      mostrarToast('Selecciona una fecha válida.', 'error');
+      return;
+    }
+
+    setGenerandoExcel(true);
+    try {
+      const res = await api.get('/informes/asistencia-general/excel', {
+        params: { fecha, sucursalId: sucursalId || undefined },
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `asistencia-general-${fecha}.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      mostrarToast(err?.response?.data?.error || 'No se pudo generar el Excel.', 'error');
+    } finally {
+      setGenerandoExcel(false);
+    }
+  }
+
   return (
     <div>
       <h1 className="page-title">Asistencia general</h1>
@@ -84,12 +110,15 @@ export default function AsistenciaGeneral() {
             </select>
           </div>
 
-          <div className="field" style={{ display: 'flex', alignItems: 'end', gap: 8 }}>
+          <div className="field" style={{ display: 'flex', alignItems: 'end', gap: 8, flexWrap: 'wrap' }}>
             <button className="btn btn-submodal" onClick={buscar} disabled={buscando || !fecha} style={{ flex: 1 }}>
               {buscando ? 'Buscando...' : 'Buscar'}
             </button>
             <button className="btn btn-primary" onClick={exportarPDF} disabled={generando || !fecha} style={{ flex: 1 }}>
               {generando ? 'Generando...' : 'Exportar PDF'}
+            </button>
+            <button className="btn btn-secondary" onClick={exportarExcel} disabled={generandoExcel || !fecha} style={{ flex: 1 }}>
+              {generandoExcel ? 'Generando...' : 'Exportar Excel'}
             </button>
           </div>
         </div>

@@ -10,9 +10,10 @@ export default function Boleta() {
   const hoy = hoyLocal();
   const [fecha, setFecha] = useState(hoy);
   const [sucursalId, setSucursalId] = useState('');
+  const [cadTexto, setCadTexto] = useState('');
   const [motoristas, setMotoristas] = useState([]);
   const [seleccionados, setSeleccionados] = useState([]);
-  const [generando, setGenerando] = useState(false);
+  const [generandoBlanco, setGenerandoBlanco] = useState(false);
   const [esMovil, setEsMovil] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
 
   useEffect(() => {
@@ -74,11 +75,20 @@ export default function Boleta() {
     setSeleccionados(motoristas.map((m) => Number(m.motoristaId)));
   }
 
-  async function generar() {
-    setGenerando(true);
+  function handleCadChange(e) {
+    const valor = e.target.value;
+    setCadTexto(valor);
+    const match = usuario?.sucursales?.find(
+      (s) => s.nombre.trim().toLowerCase() === valor.trim().toLowerCase()
+    );
+    setSucursalId(match ? String(match.id) : '');
+  }
+
+  async function generarNueva() {
+    setGenerandoBlanco(true);
     try {
       const params = { fecha, sucursalId, motoristaIds: seleccionados.join(',') };
-      const res = await api.get('/informes/boleta', {
+      const res = await api.get('/informes/boleta-nueva', {
         params,
         responseType: 'blob'
       });
@@ -91,7 +101,7 @@ export default function Boleta() {
     } catch (err) {
       mostrarToast(err?.response?.data?.error || 'No se pudo generar la boleta.', 'error');
     } finally {
-      setGenerando(false);
+      setGenerandoBlanco(false);
     }
   }
 
@@ -111,10 +121,19 @@ export default function Boleta() {
           </div>
           <div className="field">
             <label>CAD (sucursal)</label>
-            <select value={sucursalId} onChange={(e) => setSucursalId(e.target.value)}>
-              <option value="">Selecciona un CAD</option>
-              {usuario?.sucursales?.map((s) => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-            </select>
+            <input
+              type="text"
+              list="lista-cads"
+              placeholder="Escribe o selecciona un CAD"
+              value={cadTexto}
+              onChange={handleCadChange}
+              onFocus={(e) => e.target.showPicker?.()}
+              onClick={(e) => e.target.showPicker?.()}
+              autoComplete="off"
+            />
+            <datalist id="lista-cads">
+              {usuario?.sucursales?.map((s) => <option key={s.id} value={s.nombre} />)}
+            </datalist>
           </div>
         </div>
 
@@ -211,9 +230,11 @@ export default function Boleta() {
           </div>
         )}
 
-        <button className="btn btn-primary" onClick={generar} disabled={generando || !sucursalId}>
-          {generando ? 'Generando...' : 'Generar boleta (PDF)'}
-        </button>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <button className="btn btn-primary" onClick={generarNueva} disabled={generandoBlanco || !sucursalId}>
+            {generandoBlanco ? 'Generando...' : 'Nueva boleta'}
+          </button>
+        </div>
       </div>
     </div>
   );
