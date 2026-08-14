@@ -16,6 +16,7 @@ const SECCIONES = [
   ]},
   { titulo: 'Informes', items: [
     { to: '/informes/boletas-cierre', label: 'Boletas cierre' },
+    { to: '/informes/subir-boleta', label: 'Subir boleta', rolesExcluidos: ['Gerente'] },
     { to: '/informes/asistencia', label: 'Informe de asistencia' },
     { to: '/informes/asistencia-general', label: 'Asistencia general' },
     { to: '/informes/ficha-personal', label: 'Ficha de personal' }
