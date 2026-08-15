@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { useEnTurno, useTarifas, useCerrarTurno, useRepartosAutorizados } from '../api/hooks';
+import { useEnTurno, useTarifas, useCerrarTurno, useRepartosAutorizados, useRevertirCierre } from '../api/hooks';
 import { hoyLocal } from '../utils/fecha';
 
 function pad(n) {
@@ -22,10 +22,20 @@ export default function CierreTurno() {
   const [busqueda, setBusqueda] = useState('');
   const [abierto, setAbierto] = useState(null);
 
+  const esAdmin = (usuario?.roles ?? []).includes('Admin');
   const { data: enTurno } = useEnTurno(sucursalId);
   const { data: tarifas } = useTarifas();
   const cerrarTurno = useCerrarTurno();
   const { data: autorizadosHoy } = useRepartosAutorizados(sucursalId, hoy);
+  const revertirCierre = useRevertirCierre();
+
+  function revertir(repartoId, nombre) {
+    if (!window.confirm(`¿Revertir el cierre de turno de ${nombre}? Vuelve a aparecer "en turno" para cerrarse de nuevo.`)) return;
+    revertirCierre.mutate(repartoId, {
+      onSuccess: () => mostrarToast(`Cierre de ${nombre} revertido. Ya puede cerrarse de nuevo.`),
+      onError: (err) => mostrarToast(err?.response?.data?.error || 'No se pudo revertir el cierre.', 'error')
+    });
+  }
 
   const filtrados = useMemo(
     () => (enTurno ?? []).filter((m) => m.nombre.toLowerCase().includes(busqueda.toLowerCase())),
@@ -84,7 +94,12 @@ export default function CierreTurno() {
           Modo consulta: se autorizan al guardar el cierre, ya no se puede modificar ni volver a marcar.
         </p>
         <table>
-          <thead><tr><th>Motorista</th><th>Entregas</th><th>Fecha ingreso</th><th>Fecha de salida</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Motorista</th><th>Entregas</th><th>Fecha ingreso</th><th>Fecha de salida</th>
+              {esAdmin && <th>Acciones</th>}
+            </tr>
+          </thead>
           <tbody>
             {autorizadosHoy?.map((a) => (
               <tr key={a.repartoId}>
@@ -92,6 +107,18 @@ export default function CierreTurno() {
                 <td>{a.entregas}</td>
                 <td>{a.horaIngreso}</td>
                 <td>{a.horaSalida}</td>
+                {esAdmin && (
+                  <td>
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      onClick={() => revertir(a.repartoId, a.nombre)}
+                      disabled={revertirCierre.isPending}
+                    >
+                      Revertir
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

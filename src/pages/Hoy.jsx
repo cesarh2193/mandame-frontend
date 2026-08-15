@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { useAuth } from '../context/AuthContext';
-import { useResumenHoy, useCuadreCads } from '../api/hooks';
+import { useResumenHoy, useCuadreCads, useRepartosHoy } from '../api/hooks';
 
 const MAX_CADS_EN_GRAFICA = 10;
+const MAX_MOTORISTAS_EN_GRAFICA = 20;
 
 export default function Hoy() {
   const { usuario } = useAuth();
@@ -15,6 +16,7 @@ export default function Hoy() {
 
   const { data: resumen, isLoading } = useResumenHoy(sucursalId);
   const { data: cuadreCads } = useCuadreCads(); // el backend ya filtra: solo trae datos si el rol es Administrador
+  const { data: repartosHoy } = useRepartosHoy(sucursalId); // gráfica del no-Administrador
 
   if (isLoading) return <p>Cargando...</p>;
 
@@ -42,6 +44,11 @@ export default function Hoy() {
     }, {})
   ).sort((a, b) => b.pendientes - a.pendientes);
   const pendientesVisibles = pendientesPorCad.slice(0, MAX_CADS_EN_GRAFICA);
+
+  // Repartos por motorista en el cierre de hoy — gráfica que ve un
+  // no-Administrador, ya viene ordenada desc. por el backend.
+  const repartosVisibles = (repartosHoy ?? []).slice(0, MAX_MOTORISTAS_EN_GRAFICA);
+  const hayMasMotoristas = (repartosHoy ?? []).length > repartosVisibles.length;
 
   return (
     <div>
@@ -118,6 +125,24 @@ export default function Hoy() {
           ) : (
             <p style={{ color: 'var(--text-3)', fontSize: 12.5 }}>No hay pendientes en este momento.</p>
           )}
+        </div>
+      )}
+
+      {!esAdmin && repartosVisibles.length > 0 && (
+        <div className="card">
+          <h2>Repartos por motorista en el cierre de hoy</h2>
+          <p className="page-sub" style={{ marginBottom: 12 }}>
+            Cantidad de entregas registrada al cerrar turno hoy{hayMasMotoristas ? ` (top ${repartosVisibles.length} de ${repartosHoy.length})` : ''}
+          </p>
+          <ResponsiveContainer width="100%" height={Math.max(220, repartosVisibles.length * 32)}>
+            <BarChart data={repartosVisibles} layout="vertical" margin={{ left: 24 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+              <XAxis type="number" allowDecimals={false} />
+              <YAxis type="category" dataKey="nombre" width={160} tick={{ fontSize: 12 }} />
+              <Tooltip formatter={(v) => [v, 'Repartos']} labelFormatter={(nombre, payload) => `${nombre} · ${payload?.[0]?.payload?.sucursal ?? ''}`} />
+              <Bar dataKey="repartos" fill="var(--teal, #12806B)" barSize={14} radius={4} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       )}
     </div>

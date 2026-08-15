@@ -45,8 +45,17 @@ export default function SubirBoleta() {
     }
   }
 
-  function iniciarSubida(motoristaId) {
-    motoristaObjetivoRef.current = motoristaId;
+  function iniciarSubida(motorista) {
+    if (motorista.estado === 'CARGADA') {
+      const confirmado = window.confirm(
+        `Ya existe una boleta cargada para ${motorista.nombre} en esta fecha. ` +
+        'Si subís otra, la anterior queda guardada como copia (reemplazada) y esta nueva pasa a ser la boleta activa.\n\n' +
+        '¿Deseás reemplazarla?'
+      );
+      if (!confirmado) return;
+    }
+
+    motoristaObjetivoRef.current = Number(motorista.motoristaId);
     inputArchivoRef.current?.click();
   }
 
@@ -92,6 +101,12 @@ export default function SubirBoleta() {
   }
 
   const totalCargadas = motoristas?.filter((m) => m.estado === 'CARGADA').length ?? 0;
+  const esAdmin = (usuario?.roles ?? []).includes('Admin');
+  // Por seguridad, subir o reemplazar una boleta solo se permite el
+  // mismo día — salvo Administrador, que sí puede corregir boletas de
+  // otra fecha. El backend también lo valida, esto es solo para no
+  // dejar que el resto de roles ni siquiera intente con una fecha pasada.
+  const puedeSubir = fecha === hoy || esAdmin;
 
   return (
     <div>
@@ -150,6 +165,12 @@ export default function SubirBoleta() {
               <div style={{ marginBottom: 12, fontSize: 13, fontWeight: 700, color: 'var(--text-2)' }}>
                 {totalCargadas} de {motoristas.length} boletas cargadas
               </div>
+              {!puedeSubir && (
+                <p style={{ color: 'var(--amber-dark)', background: 'var(--amber-light)', padding: '10px 12px', borderRadius: 8, fontSize: 12.5, marginBottom: 12 }}>
+                  Estás viendo una fecha distinta a hoy: solo se puede consultar (Ver boleta). Subir o reemplazar una
+                  boleta solo está permitido el mismo día.
+                </p>
+              )}
               <table>
                 <thead>
                   <tr>
@@ -177,8 +198,9 @@ export default function SubirBoleta() {
                           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                             <button
                               className="btn btn-secondary"
-                              onClick={() => iniciarSubida(id)}
-                              disabled={subiendoId === id}
+                              onClick={() => iniciarSubida(m)}
+                              disabled={!puedeSubir || subiendoId === id}
+                              title={!puedeSubir ? 'Solo se puede subir o reemplazar la boleta del día de hoy.' : undefined}
                             >
                               {subiendoId === id ? 'Subiendo...' : 'Subir boleta'}
                             </button>

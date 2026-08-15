@@ -44,6 +44,14 @@ export function useCuadreCads() {
   });
 }
 
+export function useRepartosHoy(sucursalId) {
+  // gráfica de repartos por motorista que ve un no-Administrador
+  return useQuery({
+    queryKey: ['repartos-hoy', sucursalId],
+    queryFn: () => api.get('/dashboard/repartos-hoy', { params: { sucursalId } }).then((r) => r.data)
+  });
+}
+
 // ---------- Planificación ----------
 export function usePlanificacion(fecha) {
   return useQuery({
@@ -56,6 +64,22 @@ export function useGuardarPlanificacion() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload) => api.post('/planificacion', payload).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['planificacion'] })
+  });
+}
+
+export function useEditarPlanificacion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload) => api.put('/planificacion', payload).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['planificacion'] })
+  });
+}
+
+export function useAnularPlanificacion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sucursalId, fecha }) => api.delete('/planificacion', { params: { sucursalId, fecha } }).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['planificacion'] })
   });
 }
@@ -174,6 +198,18 @@ export function useAutorizarRepartos() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['repartos-pendientes'] });
       qc.invalidateQueries({ queryKey: ['repartos-autorizados'] });
+    }
+  });
+}
+
+export function useRevertirCierre() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (repartoId) => api.post(`/autorizacion/${repartoId}/revertir`).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['repartos-autorizados'] });
+      qc.invalidateQueries({ queryKey: ['repartos-pendientes'] });
+      qc.invalidateQueries({ queryKey: ['en-turno'] });
     }
   });
 }
