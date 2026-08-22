@@ -6,6 +6,7 @@ import { rutaInicio } from './utils/rutas';
 
 import Login from './pages/Login';
 import Restablecer from './pages/Restablecer';
+import SubirBoletaPublico from './pages/SubirBoletaPublico';
 import Hoy from './pages/Hoy';
 import Monitoreo from './pages/Monitoreo';
 import Planificacion from './pages/Planificacion';
@@ -15,6 +16,7 @@ import CierreTurno from './pages/CierreTurno';
 import Autorizar from './pages/Autorizar';
 import Boleta from './pages/informes/Boleta';
 import SubirBoleta from './pages/informes/SubirBoleta';
+import RevisionBoletas from './pages/informes/RevisionBoletas';
 import AsistenciaInforme from './pages/informes/AsistenciaInforme';
 import AsistenciaGeneral from './pages/informes/AsistenciaGeneral';
 import FichaPersonalInforme from './pages/informes/FichaPersonalInforme';
@@ -35,6 +37,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/restablecer" element={<Restablecer />} />
+          <Route path="/subir-boleta" element={<SubirBoletaPublico />} />
 
           <Route
             element={
@@ -120,6 +123,14 @@ export default function App() {
               element={
                 <ProtectedRoute rolesExcluidos={['Gerente']}>
                   <SubirBoleta />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/informes/revision-boletas"
+              element={
+                <ProtectedRoute rolesExcluidos={['Motorista']}>
+                  <RevisionBoletas />
                 </ProtectedRoute>
               }
             />

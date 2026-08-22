@@ -19,6 +19,9 @@ export default function SubirBoleta() {
   const [motoristas, setMotoristas] = useState(null);
   const [subiendoId, setSubiendoId] = useState(null);
   const [viendoId, setViendoId] = useState(null);
+  const [generandoLink, setGenerandoLink] = useState(false);
+  const [linkGenerado, setLinkGenerado] = useState('');
+  const [copiado, setCopiado] = useState(false);
   const inputArchivoRef = useRef(null);
   const motoristaObjetivoRef = useRef(null);
 
@@ -95,6 +98,32 @@ export default function SubirBoleta() {
     }
   }
 
+  async function generarLink() {
+    if (!sucursalId) {
+      mostrarToast('Selecciona un CAD primero.', 'error');
+      return;
+    }
+    setGenerandoLink(true);
+    setCopiado(false);
+    try {
+      const res = await api.post('/boletas/generar-link', { sucursalId, fecha: hoy });
+      setLinkGenerado(`${window.location.origin}/subir-boleta?token=${res.data.token}`);
+    } catch (err) {
+      mostrarToast(err?.response?.data?.error || 'No se pudo generar el link.', 'error');
+    } finally {
+      setGenerandoLink(false);
+    }
+  }
+
+  async function copiarLink() {
+    try {
+      await navigator.clipboard.writeText(linkGenerado);
+      setCopiado(true);
+    } catch {
+      mostrarToast('No se pudo copiar. Copialo manualmente.', 'error');
+    }
+  }
+
   async function verBoleta(motoristaId) {
     setViendoId(motoristaId);
     try {
@@ -160,6 +189,30 @@ export default function SubirBoleta() {
           </div>
         </div>
       </div>
+
+      {!esMotoristaPuro && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+            <div>
+              <strong style={{ fontSize: 13.5 }}>Link para compartir por WhatsApp</strong>
+              <p className="page-sub" style={{ margin: '2px 0 0' }}>
+                Un motorista puede subir su propia boleta de hoy sin necesitar cuenta, entrando con este link. Vence a las 48 horas.
+              </p>
+            </div>
+            <button className="btn btn-ghost" onClick={generarLink} disabled={generandoLink || !sucursalId}>
+              {generandoLink ? 'Generando...' : 'Generar link para compartir hoy'}
+            </button>
+          </div>
+          {linkGenerado && (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 12, flexWrap: 'wrap' }}>
+              <input value={linkGenerado} readOnly style={{ flex: 1, minWidth: 220 }} onFocus={(e) => e.target.select()} />
+              <button className="btn btn-primary" onClick={copiarLink}>
+                {copiado ? 'Copiado' : 'Copiar'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       <input
         ref={inputArchivoRef}

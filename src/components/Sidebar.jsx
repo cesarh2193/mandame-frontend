@@ -18,6 +18,7 @@ const SECCIONES = [
     { to: '/informes/boletas-cierre', label: 'Boletas cierre', rolesExcluidos: ['Motorista'] },
     { to: '/informes/subir-boleta', label: 'Subir boleta', rolesExcluidos: ['Gerente', 'Motorista'] },
     { to: '/informes/subir-boleta', label: 'Boletas cierre', roles: ['Motorista'] },
+    { to: '/informes/revision-boletas', label: 'Revisión de boletas', rolesExcluidos: ['Motorista'] },
     { to: '/informes/asistencia', label: 'Informe de asistencia', rolesExcluidos: ['Motorista'] },
     { to: '/informes/asistencia-general', label: 'Asistencia general', rolesExcluidos: ['Motorista'] },
     { to: '/informes/ficha-personal', label: 'Ficha de personal', rolesExcluidos: ['Motorista'] }

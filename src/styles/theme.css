@@ -64,6 +64,9 @@ a{color:inherit;}
 .form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;}
 .form-grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:12px;}
 .form-grid-consulta{display:grid;grid-template-columns:repeat(4,1fr) auto auto;gap:12px;margin-bottom:12px;}
+.grid-boletas{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;}
+.boleta-miniatura{width:100%;aspect-ratio:4/3;object-fit:contain;background:var(--bg);border:1px solid var(--line);border-radius:8px;cursor:pointer;}
+.boleta-sin-cargar{width:100%;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;background:var(--bg);border:1px dashed var(--line);border-radius:8px;color:var(--text-3);font-size:12.5px;font-weight:600;text-align:center;padding:8px;}
 .field label{display:block;font-size:12px;color:var(--text-2);margin-bottom:5px;font-weight:600;}
 .field input,.field select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;background:var(--input-bg);color:var(--text);}
 
@@ -152,6 +155,7 @@ td:nth-child(2), th:nth-child(2){min-width:180px;}
   .form-grid-consulta{grid-template-columns:1fr;}
   .form-grid-consulta .btn{width:100%;}
   .grid-kpi{grid-template-columns:repeat(2,1fr);}
+  .grid-boletas{grid-template-columns:1fr;}
 
   /* las tablas no se rompen: la tarjeta que las contiene scrollea
      horizontal si hace falta. Ojo: NO forzar un ancho mínimo por
