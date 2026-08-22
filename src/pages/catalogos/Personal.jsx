@@ -18,11 +18,25 @@ const BANCOS_GUATEMALA = [
   'Banco Agromercantil (BAM)', 'Banco Promerica', 'Bantrab', 'Banco Ficohsa Guatemala',
   'Banco Inmobiliario', 'Interbanco', 'CHN (Crédito Hipotecario Nacional)', 'Vivibanco', 'Banco Azteca', 'Otro'
 ];
+// tipo es el código que se guarda en persona_documento.tipo (y con el
+// que se arma la ruta /api/personal/:id/documentos/:tipo) — DPI,
+// RECIBO_LUZ y LICENCIA no se renombran para no dejar huérfanos los
+// documentos que la gente ya subió antes de agregar el resto.
 const TIPOS_DOCUMENTO = [
-  { tipo: 'DPI', etiqueta: 'DPI' },
-  { tipo: 'RECIBO_LUZ', etiqueta: 'Recibo de luz' },
-  { tipo: 'LICENCIA', etiqueta: 'Licencia' }
+  { tipo: 'DPI', etiqueta: 'DPI (frente)', categoria: 'Identificación' },
+  { tipo: 'DPI_REVERSO', etiqueta: 'DPI (reverso)', categoria: 'Identificación' },
+  { tipo: 'LICENCIA', etiqueta: 'Licencia de conducir (frente)', categoria: 'Identificación' },
+  { tipo: 'LICENCIA_REVERSO', etiqueta: 'Licencia de conducir (reverso)', categoria: 'Identificación' },
+  { tipo: 'RECIBO_LUZ', etiqueta: 'Recibo de luz', categoria: 'Identificación' },
+  { tipo: 'TARJETA_CIRCULACION', etiqueta: 'Tarjeta de circulación', categoria: 'Administrativo' },
+  { tipo: 'POLITICAS_CUMPLIMIENTO', etiqueta: 'Políticas de cumplimiento', categoria: 'Administrativo' },
+  { tipo: 'ENTREVISTA', etiqueta: 'Entrevista', categoria: 'Administrativo' },
+  { tipo: 'TARJETA_SALUD', etiqueta: 'Tarjeta de salud', categoria: 'Salud' },
+  { tipo: 'TARJETA_PULMONES', etiqueta: 'Tarjeta de pulmones', categoria: 'Salud' },
+  { tipo: 'MANIPULACION_ALIMENTOS', etiqueta: 'Tarjeta de manipulación de alimentos (frente)', categoria: 'Salud' },
+  { tipo: 'MANIPULACION_ALIMENTOS_REVERSO', etiqueta: 'Tarjeta de manipulación de alimentos (reverso)', categoria: 'Salud' }
 ];
+const CATEGORIAS_DOCUMENTO = ['Identificación', 'Administrativo', 'Salud'];
 const POR_PAGINA = 20;
 const FORM_VACIO = {
   codigo: '', nombres: '', apellidos: '', dpi: '', puesto: 'Motorista', empresaId: '', sucursalId: '',
@@ -33,7 +47,7 @@ const FORM_VACIO = {
   igss: '', estadoCivil: '', nombreConyuge: '', nombrePadre: '', nombreMadre: '',
   fechaInicioLabores: '', fechaFinLabores: '', seguroVida: false,
   fotoArchivo: null,
-  docArchivos: { DPI: null, RECIBO_LUZ: null, LICENCIA: null }
+  docArchivos: {}
 };
 
 function dpiEsValido(dpi) {
@@ -50,15 +64,20 @@ const CAMPOS_COMPLETITUD = [
   'contactoEmergenciaNombre', 'contactoEmergenciaTelefono', 'contactoEmergenciaRelacion',
   'numeroCuenta', 'banco', 'tipoCuenta',
   'igss', 'estadoCivil', 'nombrePadre', 'nombreMadre', 'fechaInicioLabores',
-  'tieneFoto', 'tieneDocDpi', 'tieneDocReciboLuz', 'tieneDocLicencia'
+  'tieneFoto'
 ];
 
+// Los documentos cuentan aparte (uno por cada tipo subido) en vez de
+// como una sola casilla booleana, para que la completitud no se
+// "estanque" en un solo punto por más documentos que se agreguen.
 function calcularCompletitud(p) {
   const llenos = CAMPOS_COMPLETITUD.filter((campo) => {
     const valor = p[campo];
     return typeof valor === 'boolean' ? valor : !!(valor && String(valor).trim());
   }).length;
-  return Math.round((llenos / CAMPOS_COMPLETITUD.length) * 100);
+  const documentosLlenos = p.documentosSubidos?.length ?? 0;
+  const totalCampos = CAMPOS_COMPLETITUD.length + TIPOS_DOCUMENTO.length;
+  return Math.round(((llenos + documentosLlenos) / totalCampos) * 100);
 }
 
 function colorCompletitud(porcentaje) {
@@ -183,7 +202,7 @@ export default function Personal() {
       mostrarToast('El DPI debe tener 13 dígitos.', 'error');
       return;
     }
-    const { fotoArchivo, docArchivos, tieneFoto, tieneDocDpi, tieneDocReciboLuz, tieneDocLicencia, id, ...payload } = editando;
+    const { fotoArchivo, docArchivos, tieneFoto, documentosSubidos, id, ...payload } = editando;
     mut.actualizar.mutate(
       { id, ...payload },
       {
@@ -231,10 +250,8 @@ export default function Personal() {
       seguroVida: !!p.seguroVida,
       tieneFoto: !!p.tieneFoto,
       fotoArchivo: null,
-      tieneDocDpi: !!p.tieneDocDpi,
-      tieneDocReciboLuz: !!p.tieneDocReciboLuz,
-      tieneDocLicencia: !!p.tieneDocLicencia,
-      docArchivos: { DPI: null, RECIBO_LUZ: null, LICENCIA: null }
+      documentosSubidos: p.documentosSubidos || [],
+      docArchivos: {}
     };
   }
 
@@ -513,17 +530,11 @@ export default function Personal() {
         </div>
 
         <Seccion titulo="Documentos" />
-        <div className="form-grid-3">
-          {TIPOS_DOCUMENTO.map(({ tipo, etiqueta }) => (
-            <DocumentoField
-              key={tipo}
-              tipo={tipo}
-              etiqueta={etiqueta}
-              archivoLocal={form.docArchivos[tipo]}
-              onCambiar={(archivo) => setForm({ ...form, docArchivos: { ...form.docArchivos, [tipo]: archivo } })}
-            />
-          ))}
-        </div>
+        <AcordeonDocumentos
+          documentosSubidos={[]}
+          docArchivos={form.docArchivos}
+          onCambiarArchivo={(tipo, archivo) => setForm({ ...form, docArchivos: { ...form.docArchivos, [tipo]: archivo } })}
+        />
 
         {mut.crear.isError && (
           <p style={{ color: 'var(--coral-dark)', background: 'var(--coral-light)', padding: '10px 12px', borderRadius: 8, fontSize: 12.5, marginTop: 4 }}>
@@ -583,24 +594,6 @@ export default function Personal() {
               <Campo label="Nombre de la madre" valor={viendo.nombreMadre} />
             </div>
 
-            <Seccion titulo="Documentos" />
-            <div className="form-grid-3">
-              {TIPOS_DOCUMENTO.map(({ tipo, etiqueta }) => (
-                <DocumentoField
-                  key={tipo}
-                  tipo={tipo}
-                  etiqueta={etiqueta}
-                  personaId={viendo.id}
-                  subido={
-                    tipo === 'DPI' ? viendo.tieneDocDpi
-                      : tipo === 'RECIBO_LUZ' ? viendo.tieneDocReciboLuz
-                        : viendo.tieneDocLicencia
-                  }
-                  soloLectura
-                />
-              ))}
-            </div>
-
             {viendo.tambienMotorista && (
               <>
                 <Seccion titulo="Datos de motorista" />
@@ -611,6 +604,14 @@ export default function Personal() {
                 </div>
               </>
             )}
+
+            <Seccion titulo="Documentos" />
+            <AcordeonDocumentos
+              personaId={viendo.id}
+              documentosSubidos={viendo.documentosSubidos || []}
+              docArchivos={{}}
+              soloLectura
+            />
           </>
         )}
       </Modal>
@@ -756,23 +757,12 @@ export default function Personal() {
             </div>
 
             <Seccion titulo="Documentos" />
-            <div className="form-grid-3">
-              {TIPOS_DOCUMENTO.map(({ tipo, etiqueta }) => (
-                <DocumentoField
-                  key={tipo}
-                  tipo={tipo}
-                  etiqueta={etiqueta}
-                  personaId={editando.id}
-                  subido={
-                    tipo === 'DPI' ? editando.tieneDocDpi
-                      : tipo === 'RECIBO_LUZ' ? editando.tieneDocReciboLuz
-                        : editando.tieneDocLicencia
-                  }
-                  archivoLocal={editando.docArchivos[tipo]}
-                  onCambiar={(archivo) => setEditando({ ...editando, docArchivos: { ...editando.docArchivos, [tipo]: archivo } })}
-                />
-              ))}
-            </div>
+            <AcordeonDocumentos
+              personaId={editando.id}
+              documentosSubidos={editando.documentosSubidos || []}
+              docArchivos={editando.docArchivos}
+              onCambiarArchivo={(tipo, archivo) => setEditando({ ...editando, docArchivos: { ...editando.docArchivos, [tipo]: archivo } })}
+            />
             {mut.actualizar.isError && (
               <p style={{ color: 'var(--coral-dark)', background: 'var(--coral-light)', padding: '10px 12px', borderRadius: 8, fontSize: 12.5 }}>
                 No se pudo guardar: {mut.actualizar.error?.response?.data?.error || mut.actualizar.error?.message || 'error desconocido'}.
@@ -1056,6 +1046,7 @@ function FotoUploader({ archivo, tieneFotoGuardada, personaId, onCambiar }) {
 function DocumentoField({ tipo, etiqueta, personaId, subido, archivoLocal, onCambiar, soloLectura }) {
   const [cargando, setCargando] = useState(false);
   const mostrarToast = useToast();
+  const cargado = subido || !!archivoLocal;
 
   async function verDocumento() {
     setCargando(true);
@@ -1072,7 +1063,16 @@ function DocumentoField({ tipo, etiqueta, personaId, subido, archivoLocal, onCam
 
   return (
     <div className="field">
-      <label>{etiqueta}</label>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span
+          title={cargado ? 'Documento cargado' : 'Documento pendiente'}
+          style={{
+            display: 'inline-block', width: 9, height: 9, borderRadius: '50%', flexShrink: 0,
+            background: cargado ? 'var(--teal-dark)' : 'var(--coral-dark)'
+          }}
+        />
+        {etiqueta}
+      </label>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         {!soloLectura && (
           <label className="btn btn-ghost" style={{ cursor: 'pointer' }}>
@@ -1095,6 +1095,56 @@ function DocumentoField({ tipo, etiqueta, personaId, subido, archivoLocal, onCam
           <span style={{ fontSize: 11.5, color: 'var(--text-2)' }}>{archivoLocal.name}</span>
         )}
       </div>
+    </div>
+  );
+}
+
+// Agrupa los 12 documentos por categoría en acordeones plegables, para no
+// saturar el modal con todos los campos sueltos de una — "Identificación"
+// abre por defecto (es la más usada), el resto arranca cerrado.
+function AcordeonDocumentos({ personaId, documentosSubidos, docArchivos, onCambiarArchivo, soloLectura }) {
+  const [abiertas, setAbiertas] = useState({ 'Identificación': true });
+
+  return (
+    <div>
+      {CATEGORIAS_DOCUMENTO.map((categoria) => {
+        const items = TIPOS_DOCUMENTO.filter((d) => d.categoria === categoria);
+        const cargados = items.filter((d) => documentosSubidos.includes(d.tipo) || docArchivos[d.tipo]).length;
+        const abierta = !!abiertas[categoria];
+
+        return (
+          <div key={categoria} className="card" style={{ marginBottom: 10, padding: 14 }}>
+            <div
+              onClick={() => setAbiertas((a) => ({ ...a, [categoria]: !a[categoria] }))}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+            >
+              <strong style={{ fontSize: 13.5 }}>{categoria}</strong>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span className={`status-pill ${cargados === items.length ? 'ok' : 'pending'}`}>
+                  {cargados}/{items.length} cargados
+                </span>
+                <span style={{ color: 'var(--text-3)' }}>{abierta ? '⌄' : '›'}</span>
+              </div>
+            </div>
+            {abierta && (
+              <div className="form-grid-3" style={{ marginTop: 12 }}>
+                {items.map(({ tipo, etiqueta }) => (
+                  <DocumentoField
+                    key={tipo}
+                    tipo={tipo}
+                    etiqueta={etiqueta}
+                    personaId={personaId}
+                    subido={documentosSubidos.includes(tipo)}
+                    archivoLocal={docArchivos[tipo]}
+                    onCambiar={onCambiarArchivo ? (archivo) => onCambiarArchivo(tipo, archivo) : undefined}
+                    soloLectura={soloLectura}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

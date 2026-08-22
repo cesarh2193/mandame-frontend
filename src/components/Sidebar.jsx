@@ -4,27 +4,28 @@ import { useAuth } from '../context/AuthContext';
 
 const SECCIONES = [
   { titulo: 'Operación diaria', items: [
-    { to: '/hoy', label: 'Hoy' },
+    { to: '/hoy', label: 'Hoy', rolesExcluidos: ['Motorista'] },
     { to: '/monitoreo', label: 'Monitoreo', roles: ['Admin', 'Gerente'] }
   ]},
   { titulo: 'Planificación', items: [
-    { to: '/planificacion', label: 'Planificación', rolesExcluidos: ['Gerente'] }
+    { to: '/planificacion', label: 'Planificación', rolesExcluidos: ['Gerente', 'Motorista'] }
   ]},
   { titulo: 'Ciclo', items: [
-    { to: '/asignaciones', label: 'Asignación y Asistencia', rolesExcluidos: ['Gerente'] },
-    { to: '/cierre-turno', label: 'Cierre y Autorización turno', rolesExcluidos: ['Gerente'] }
+    { to: '/asignaciones', label: 'Asignación y Asistencia', rolesExcluidos: ['Gerente', 'Motorista'] },
+    { to: '/cierre-turno', label: 'Cierre y Autorización turno', rolesExcluidos: ['Gerente', 'Motorista'] }
   ]},
   { titulo: 'Informes', items: [
-    { to: '/informes/boletas-cierre', label: 'Boletas cierre' },
-    { to: '/informes/subir-boleta', label: 'Subir boleta', rolesExcluidos: ['Gerente'] },
-    { to: '/informes/asistencia', label: 'Informe de asistencia' },
-    { to: '/informes/asistencia-general', label: 'Asistencia general' },
-    { to: '/informes/ficha-personal', label: 'Ficha de personal' }
+    { to: '/informes/boletas-cierre', label: 'Boletas cierre', rolesExcluidos: ['Motorista'] },
+    { to: '/informes/subir-boleta', label: 'Subir boleta', rolesExcluidos: ['Gerente', 'Motorista'] },
+    { to: '/informes/subir-boleta', label: 'Boletas cierre', roles: ['Motorista'] },
+    { to: '/informes/asistencia', label: 'Informe de asistencia', rolesExcluidos: ['Motorista'] },
+    { to: '/informes/asistencia-general', label: 'Asistencia general', rolesExcluidos: ['Motorista'] },
+    { to: '/informes/ficha-personal', label: 'Ficha de personal', rolesExcluidos: ['Motorista'] }
   ]},
   { titulo: 'Administración', items: [
     { to: '/catalogos/empresas', label: 'Empresas y sucursales', roles: ['Admin', 'Gerente'] },
     { to: '/catalogos/tarifas', label: 'Tarifas', roles: ['Admin', 'Gerente'] },
-    { to: '/catalogos/personal', label: 'Personal' },
+    { to: '/catalogos/personal', label: 'Personal', rolesExcluidos: ['Motorista'] },
     { to: '/catalogos/usuarios', label: 'Usuarios y permisos', roles: ['Admin'] }
   ]}
 ];

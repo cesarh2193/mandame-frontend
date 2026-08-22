@@ -38,8 +38,15 @@ export default function Monitoreo() {
 
   return (
     <div>
-      <h1 className="page-title">Monitoreo</h1>
-      <p className="page-sub">Cuadre de planificación vs. asistencia por CAD</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+        <div>
+          <h1 className="page-title">Monitoreo</h1>
+          <p className="page-sub">Cuadre de planificación vs. asistencia por CAD</p>
+        </div>
+        <button className="btn btn-primary" onClick={descargarPDF} style={{ flexShrink: 0 }}>
+          Descargar PDF
+        </button>
+      </div>
 
       <div className="card">
         <h2>CAD con planificación o asignación hoy ({conMovimiento.length})</h2>
@@ -61,10 +68,6 @@ export default function Monitoreo() {
           <p style={{ color: 'var(--text-3)', fontSize: 12.5 }}>Todos los CAD tienen movimiento registrado hoy.</p>
         )}
       </div>
-
-      <button className="btn btn-primary" onClick={descargarPDF}>
-        Descargar PDF
-      </button>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { rutaInicio } from '../utils/rutas';
 
 // roles: si se pasa, la ruta además exige que el usuario tenga al
 // menos uno de esos roles (ej. ['Admin']); si no los tiene, se
@@ -12,9 +13,9 @@ export default function ProtectedRoute({ children, roles, rolesExcluidos }) {
   if (authLoading) return null;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   const rolesUsuario = usuario?.roles ?? [];
-  if (roles && !rolesUsuario.some((r) => roles.includes(r))) return <Navigate to="/hoy" replace />;
+  if (roles && !rolesUsuario.some((r) => roles.includes(r))) return <Navigate to={rutaInicio(usuario)} replace />;
   if (rolesExcluidos && rolesUsuario.length > 0 && rolesUsuario.every((r) => rolesExcluidos.includes(r))) {
-    return <Navigate to="/hoy" replace />;
+    return <Navigate to={rutaInicio(usuario)} replace />;
   }
   return children;
 }

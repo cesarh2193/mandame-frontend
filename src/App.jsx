@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
+import { rutaInicio } from './utils/rutas';
 
 import Login from './pages/Login';
 import Restablecer from './pages/Restablecer';
@@ -22,6 +23,11 @@ import Tarifas from './pages/catalogos/Tarifas';
 import Personal from './pages/catalogos/Personal';
 import Usuarios from './pages/catalogos/Usuarios';
 
+function InicioRedirect() {
+  const { usuario } = useAuth();
+  return <Navigate to={rutaInicio(usuario)} replace />;
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -37,7 +43,14 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="/hoy" element={<Hoy />} />
+            <Route
+              path="/hoy"
+              element={
+                <ProtectedRoute rolesExcluidos={['Motorista']}>
+                  <Hoy />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/monitoreo"
               element={
@@ -49,7 +62,7 @@ export default function App() {
             <Route
               path="/planificacion"
               element={
-                <ProtectedRoute rolesExcluidos={['Gerente']}>
+                <ProtectedRoute rolesExcluidos={['Gerente', 'Motorista']}>
                   <Planificacion />
                 </ProtectedRoute>
               }
@@ -57,7 +70,7 @@ export default function App() {
             <Route
               path="/asignaciones"
               element={
-                <ProtectedRoute rolesExcluidos={['Gerente']}>
+                <ProtectedRoute rolesExcluidos={['Gerente', 'Motorista']}>
                   <Asignaciones />
                 </ProtectedRoute>
               }
@@ -65,7 +78,7 @@ export default function App() {
             <Route
               path="/asistencia"
               element={
-                <ProtectedRoute rolesExcluidos={['Gerente']}>
+                <ProtectedRoute rolesExcluidos={['Gerente', 'Motorista']}>
                   <Asistencia />
                 </ProtectedRoute>
               }
@@ -73,14 +86,35 @@ export default function App() {
             <Route
               path="/cierre-turno"
               element={
-                <ProtectedRoute rolesExcluidos={['Gerente']}>
+                <ProtectedRoute rolesExcluidos={['Gerente', 'Motorista']}>
                   <CierreTurno />
                 </ProtectedRoute>
               }
             />
-            <Route path="/autorizar" element={<Autorizar />} />
-            <Route path="/informes/boleta" element={<Boleta />} />
-            <Route path="/informes/boletas-cierre" element={<Boleta />} />
+            <Route
+              path="/autorizar"
+              element={
+                <ProtectedRoute rolesExcluidos={['Motorista']}>
+                  <Autorizar />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/informes/boleta"
+              element={
+                <ProtectedRoute rolesExcluidos={['Motorista']}>
+                  <Boleta />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/informes/boletas-cierre"
+              element={
+                <ProtectedRoute rolesExcluidos={['Motorista']}>
+                  <Boleta />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/informes/subir-boleta"
               element={
@@ -89,9 +123,30 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="/informes/asistencia" element={<AsistenciaInforme />} />
-            <Route path="/informes/asistencia-general" element={<AsistenciaGeneral />} />
-            <Route path="/informes/ficha-personal" element={<FichaPersonalInforme />} />
+            <Route
+              path="/informes/asistencia"
+              element={
+                <ProtectedRoute rolesExcluidos={['Motorista']}>
+                  <AsistenciaInforme />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/informes/asistencia-general"
+              element={
+                <ProtectedRoute rolesExcluidos={['Motorista']}>
+                  <AsistenciaGeneral />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/informes/ficha-personal"
+              element={
+                <ProtectedRoute rolesExcluidos={['Motorista']}>
+                  <FichaPersonalInforme />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/catalogos/empresas"
               element={
@@ -108,7 +163,14 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="/catalogos/personal" element={<Personal />} />
+            <Route
+              path="/catalogos/personal"
+              element={
+                <ProtectedRoute rolesExcluidos={['Motorista']}>
+                  <Personal />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/catalogos/usuarios"
               element={
@@ -119,8 +181,8 @@ export default function App() {
             />
           </Route>
 
-          <Route path="/" element={<Navigate to="/hoy" replace />} />
-          <Route path="*" element={<Navigate to="/hoy" replace />} />
+          <Route path="/" element={<InicioRedirect />} />
+          <Route path="*" element={<InicioRedirect />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

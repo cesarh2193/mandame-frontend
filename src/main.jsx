@@ -3,7 +3,10 @@ import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
 import { ToastProvider } from './context/ToastContext';
+import { instalarCapturaErroresGlobales } from './api/client';
 import './styles/theme.css';
+
+instalarCapturaErroresGlobales();
 
 const queryClient = new QueryClient({
   defaultOptions: {

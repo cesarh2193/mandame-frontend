@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { api } from '../../api/client';
@@ -8,15 +8,26 @@ export default function SubirBoleta() {
   const { usuario } = useAuth();
   const mostrarToast = useToast();
   const hoy = hoyLocal();
+  // Un usuario con solo el rol Motorista ve esta misma pantalla como "su"
+  // Boletas cierre: nada más su propio CAD, sin tener que buscarlo a mano.
+  const esMotoristaPuro = (usuario?.roles ?? []).length > 0 && (usuario?.roles ?? []).every((r) => r === 'Motorista');
+  const unicaSucursal = usuario?.sucursales?.length === 1 ? usuario.sucursales[0] : null;
   const [fecha, setFecha] = useState(hoy);
-  const [sucursalId, setSucursalId] = useState('');
-  const [cadTexto, setCadTexto] = useState('');
+  const [sucursalId, setSucursalId] = useState(esMotoristaPuro && unicaSucursal ? String(unicaSucursal.id) : '');
+  const [cadTexto, setCadTexto] = useState(esMotoristaPuro && unicaSucursal ? unicaSucursal.nombre : '');
   const [buscando, setBuscando] = useState(false);
   const [motoristas, setMotoristas] = useState(null);
   const [subiendoId, setSubiendoId] = useState(null);
   const [viendoId, setViendoId] = useState(null);
   const inputArchivoRef = useRef(null);
   const motoristaObjetivoRef = useRef(null);
+
+  useEffect(() => {
+    if (esMotoristaPuro && unicaSucursal) {
+      buscar();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function handleCadChange(e) {
     const valor = e.target.value;
@@ -110,10 +121,12 @@ export default function SubirBoleta() {
 
   return (
     <div>
-      <h1 className="page-title">Subir boleta</h1>
+      <h1 className="page-title">{esMotoristaPuro ? 'Boletas cierre' : 'Subir boleta'}</h1>
       <p className="page-sub">
-        Sube la imagen de la boleta de cada motorista con asistencia y cierre de turno autorizado
-        en la fecha y CAD elegidos. Se guarda en el servidor y, si está configurado, también en Google Drive.
+        {esMotoristaPuro
+          ? 'Sube la foto de tu boleta del día. Se guarda en el servidor y, si está configurado, también en Google Drive.'
+          : 'Sube la imagen de la boleta de cada motorista con asistencia y cierre de turno autorizado ' +
+            'en la fecha y CAD elegidos. Se guarda en el servidor y, si está configurado, también en Google Drive.'}
       </p>
 
       <div className="card">

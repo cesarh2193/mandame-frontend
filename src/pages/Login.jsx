@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { rutaInicio } from '../utils/rutas';
 import logoMandame from '../assets/logo-mandame.png';
 
 export default function Login() {
@@ -17,8 +18,8 @@ export default function Login() {
   async function onSubmit(e) {
     e.preventDefault();
     try {
-      await login({ usuario, password });
-      navigate('/hoy');
+      const usuarioLogueado = await login({ usuario, password });
+      navigate(rutaInicio(usuarioLogueado));
     } catch {
       // loginError ya queda seteado por la mutación; no hace falta nada más aquí
     }
