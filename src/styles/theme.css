@@ -73,7 +73,11 @@ a{color:inherit;}
 table{width:100%;border-collapse:collapse;font-size:12.5px;}
 th{text-align:left;font-size:11px;text-transform:uppercase;color:var(--text-3);padding:8px;border-bottom:1px solid var(--line);}
 td{padding:9px 8px;border-bottom:1px solid var(--line);}
-td:nth-child(2), th:nth-child(2){min-width:180px;}
+/* Antes esto aplicaba a la 2da columna de CUALQUIER tabla del sitio
+   (Entregas, Tipo, Motorista...) dejándolas con mucho espacio de más
+   en pantallas angostas — se acota a la tabla de Personal, que es la
+   única que de verdad necesita esta columna ancha (nombres largos). */
+.tabla-personal td:nth-child(2), .tabla-personal th:nth-child(2){min-width:180px;}
 .mobile-personal-list{display:flex;flex-direction:column;gap:10px;}
 .mobile-personal-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;box-shadow:0 2px 8px rgba(15,23,42,.06);}
 .mobile-personal-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}

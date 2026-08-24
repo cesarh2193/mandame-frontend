@@ -2,29 +2,39 @@ import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { api } from '../../api/client';
-import { hoyLocal } from '../../utils/fecha';
+import { hoyLocal, formatearFechaDisplay } from '../../utils/fecha';
 
 export default function AsistenciaGeneral() {
   const { usuario } = useAuth();
   const mostrarToast = useToast();
   const hoy = hoyLocal();
-  const [fecha, setFecha] = useState(hoy);
+  const [fechaInicio, setFechaInicio] = useState(hoy);
+  const [fechaFin, setFechaFin] = useState(hoy);
   const [sucursalId, setSucursalId] = useState('');
   const [buscando, setBuscando] = useState(false);
   const [generando, setGenerando] = useState(false);
   const [generandoExcel, setGenerandoExcel] = useState(false);
   const [filas, setFilas] = useState(null);
 
-  async function buscar() {
-    if (!fecha) {
-      mostrarToast('Selecciona una fecha válida.', 'error');
-      return;
+  function rangoValido() {
+    if (!fechaInicio || !fechaFin) {
+      mostrarToast('Selecciona la fecha de inicio y la fecha final.', 'error');
+      return false;
     }
+    if (fechaInicio > fechaFin) {
+      mostrarToast('La fecha de inicio no puede ser posterior a la fecha final.', 'error');
+      return false;
+    }
+    return true;
+  }
+
+  async function buscar() {
+    if (!rangoValido()) return;
 
     setBuscando(true);
     try {
       const res = await api.get('/informes/asistencia-general/preview', {
-        params: { fecha, sucursalId: sucursalId || undefined }
+        params: { fechaInicio, fechaFin, sucursalId: sucursalId || undefined }
       });
       setFilas(res.data ?? []);
     } catch (err) {
@@ -36,21 +46,18 @@ export default function AsistenciaGeneral() {
   }
 
   async function exportarPDF() {
-    if (!fecha) {
-      mostrarToast('Selecciona una fecha válida.', 'error');
-      return;
-    }
+    if (!rangoValido()) return;
 
     setGenerando(true);
     try {
       const res = await api.get('/informes/asistencia-general', {
-        params: { fecha, sucursalId: sucursalId || undefined },
+        params: { fechaInicio, fechaFin, sucursalId: sucursalId || undefined },
         responseType: 'blob'
       });
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement('a');
       a.href = url;
-      a.download = `asistencia-general-${fecha}.pdf`;
+      a.download = `asistencia-general-${fechaInicio}-a-${fechaFin}.pdf`;
       a.click();
       window.URL.revokeObjectURL(url);
     } catch (err) {
@@ -61,21 +68,18 @@ export default function AsistenciaGeneral() {
   }
 
   async function exportarExcel() {
-    if (!fecha) {
-      mostrarToast('Selecciona una fecha válida.', 'error');
-      return;
-    }
+    if (!rangoValido()) return;
 
     setGenerandoExcel(true);
     try {
       const res = await api.get('/informes/asistencia-general/excel', {
-        params: { fecha, sucursalId: sucursalId || undefined },
+        params: { fechaInicio, fechaFin, sucursalId: sucursalId || undefined },
         responseType: 'blob'
       });
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement('a');
       a.href = url;
-      a.download = `asistencia-general-${fecha}.xlsx`;
+      a.download = `asistencia-general-${fechaInicio}-a-${fechaFin}.xlsx`;
       a.click();
       window.URL.revokeObjectURL(url);
     } catch (err) {
@@ -85,19 +89,34 @@ export default function AsistenciaGeneral() {
     }
   }
 
+  const rangoDeVariosDias = fechaInicio !== fechaFin;
+
   return (
     <div>
       <h1 className="page-title">Asistencia general</h1>
       <p className="page-sub">
-        Consulta, para una fecha, los motoristas con asistencia y cierre de turno en los CAD a los
-        que tienes acceso (o en uno solo, si lo eliges), y exporta el listado en PDF.
+        Consulta, para un rango de fechas, los motoristas con asistencia y cierre de turno en los CAD a los
+        que tienes acceso (o en uno solo, si lo eliges), y exporta el listado en PDF o Excel.
       </p>
 
       <div className="card">
         <div className="form-grid-3">
           <div className="field">
-            <label>Fecha</label>
-            <input type="date" value={fecha} onChange={(e) => { setFecha(e.target.value); setFilas(null); }} />
+            <label>Fecha inicio</label>
+            <input
+              type="date"
+              value={fechaInicio}
+              onChange={(e) => { setFechaInicio(e.target.value); setFilas(null); }}
+            />
+          </div>
+
+          <div className="field">
+            <label>Fecha final</label>
+            <input
+              type="date"
+              value={fechaFin}
+              onChange={(e) => { setFechaFin(e.target.value); setFilas(null); }}
+            />
           </div>
 
           <div className="field">
@@ -109,31 +128,32 @@ export default function AsistenciaGeneral() {
               ))}
             </select>
           </div>
+        </div>
 
-          <div className="field" style={{ display: 'flex', alignItems: 'end', gap: 8, flexWrap: 'wrap' }}>
-            <button className="btn btn-submodal" onClick={buscar} disabled={buscando || !fecha} style={{ flex: 1 }}>
-              {buscando ? 'Buscando...' : 'Buscar'}
-            </button>
-            <button className="btn btn-primary" onClick={exportarPDF} disabled={generando || !fecha} style={{ flex: 1 }}>
-              {generando ? 'Generando...' : 'Exportar PDF'}
-            </button>
-            <button className="btn btn-secondary" onClick={exportarExcel} disabled={generandoExcel || !fecha} style={{ flex: 1 }}>
-              {generandoExcel ? 'Generando...' : 'Exportar Excel'}
-            </button>
-          </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+          <button className="btn btn-submodal" onClick={buscar} disabled={buscando || !fechaInicio || !fechaFin}>
+            {buscando ? 'Buscando...' : 'Buscar'}
+          </button>
+          <button className="btn btn-primary" onClick={exportarPDF} disabled={generando || !fechaInicio || !fechaFin}>
+            {generando ? 'Generando...' : 'Exportar PDF'}
+          </button>
+          <button className="btn btn-secondary" onClick={exportarExcel} disabled={generandoExcel || !fechaInicio || !fechaFin}>
+            {generandoExcel ? 'Generando...' : 'Exportar Excel'}
+          </button>
         </div>
       </div>
 
       {filas !== null && (
         <div className="card" style={{ marginTop: 16 }}>
           {filas.length === 0 ? (
-            <p className="page-sub">No hay motoristas con asistencia y cierre de turno para esta fecha.</p>
+            <p className="page-sub">No hay motoristas con asistencia y cierre de turno para este rango de fechas.</p>
           ) : (
             <>
               <table>
                 <thead>
                   <tr>
                     <th className="col-ocultar-movil">CAD</th>
+                    {rangoDeVariosDias && <th className="col-ocultar-movil">Fecha</th>}
                     <th className="col-ocultar-movil">Cod</th>
                     <th>Nombre</th>
                     <th>Entrada</th>
@@ -144,8 +164,9 @@ export default function AsistenciaGeneral() {
                 </thead>
                 <tbody>
                   {filas.map((fila, idx) => (
-                    <tr key={`${fila.codigo}-${idx}`}>
+                    <tr key={`${fila.codigo}-${fila.fecha}-${idx}`}>
                       <td className="col-ocultar-movil">{fila.sucursal}</td>
+                      {rangoDeVariosDias && <td className="col-ocultar-movil">{formatearFechaDisplay(fila.fecha)}</td>}
                       <td className="col-ocultar-movil">{fila.codigo}</td>
                       <td>{fila.nombre}</td>
                       <td>{fila.horaIngreso || '—'}</td>

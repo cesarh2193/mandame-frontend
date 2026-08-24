@@ -336,7 +336,7 @@ export default function Personal() {
             ))}
           </div>
         ) : (
-          <table>
+          <table className="tabla-personal">
             <thead>
               <tr>
                 <th>Código</th>
