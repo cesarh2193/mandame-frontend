@@ -169,6 +169,17 @@ td{padding:9px 8px;border-bottom:1px solid var(--line);}
   .card{overflow-x:auto;}
   table{min-width:480px;}
 
+  /* Para tablas angostas (pocas columnas, contenido corto: un check,
+     un nombre, un tipo, una píldora de estado) es mejor que el nombre
+     se acomode en varias líneas a que toda la tabla se vaya a scroll
+     horizontal solo por esa columna — así se ven de una vez las demás
+     columnas sin tener que escrolear. NO usar esto en tablas con
+     muchas columnas o contenido largo (ahí sí conviene el scroll de
+     arriba). */
+  .tabla-compacta{min-width:0;table-layout:fixed;}
+  .tabla-compacta th,.tabla-compacta td{overflow-wrap:break-word;word-break:break-word;white-space:normal;}
+  .tabla-compacta .col-checkbox{width:34px;}
+
   /* columnas secundarias que se omiten en móvil para que la captura de
      datos en pantalla se vea mejor sin tener que escrolear tanto */
   .col-ocultar-movil{display:none;}

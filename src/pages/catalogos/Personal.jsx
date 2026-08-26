@@ -231,6 +231,7 @@ export default function Personal() {
       tipoMotorista: p.tipoMotorista || 'FIJO',
       placa: p.placa || '',
       licencia: p.licencia || '',
+      motoristaHabilitado: p.estadoMotorista !== 'I',
       estado: p.estado || 'A',
       telefono: p.telefono || '',
       correo: p.correo || '',
@@ -601,6 +602,7 @@ export default function Personal() {
                   <Campo label="Tipo de motorista" valor={viendo.tipoMotorista === 'TURNO' ? 'Turno (sáb-dom)' : 'Fijo'} />
                   <Campo label="Placa asignada" valor={viendo.placa || '—'} />
                   <Campo label="Licencia de conducir" valor={viendo.licencia || '—'} />
+                  <Campo label="Habilitado para asignar" valor={viendo.estadoMotorista === 'I' ? 'No' : 'Sí'} />
                 </div>
               </>
             )}
@@ -729,7 +731,22 @@ export default function Personal() {
                   <label>Licencia de conducir</label>
                   <input value={editando.licencia} onChange={(e) => setEditando({ ...editando, licencia: e.target.value.toUpperCase() })} />
                 </div>
+                <div className="field" style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 9 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={editando.motoristaHabilitado}
+                      onChange={(e) => setEditando({ ...editando, motoristaHabilitado: e.target.checked })}
+                    />
+                    Habilitado para asignar
+                  </label>
+                </div>
               </div>
+            )}
+            {editando.tambienMotorista && !editando.motoristaHabilitado && (
+              <p style={{ color: 'var(--amber-dark)', background: 'var(--amber-light)', padding: '10px 12px', borderRadius: 8, fontSize: 12.5, marginTop: -8, marginBottom: 12 }}>
+                Este motorista no va a aparecer para asignar en ningún CAD mientras esté deshabilitado.
+              </p>
             )}
 
             <Seccion titulo="Información adicional" />

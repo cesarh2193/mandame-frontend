@@ -53,12 +53,12 @@ export default function Autorizar() {
             Solo se puede autorizar el cierre del día actual. Al autorizar se envía automático un correo
             de resumen a los usuarios con rol Gerente que tengan acceso a esta sucursal.
           </p>
-          <table>
-            <thead><tr><th></th><th>Motorista</th><th>Entregas</th><th>Estado</th></tr></thead>
+          <table className="tabla-compacta">
+            <thead><tr><th className="col-checkbox"></th><th>Motorista</th><th>Entregas</th><th>Estado</th></tr></thead>
             <tbody>
               {pendientes?.map((p) => (
                 <tr key={p.repartoId}>
-                  <td>
+                  <td className="col-checkbox">
                     <input
                       type="checkbox"
                       disabled={!p.cerrado}
@@ -92,7 +92,7 @@ export default function Autorizar() {
           <p style={{ fontSize: 12, color: 'var(--text-3)' }}>
             Modo consulta: ya no se puede modificar ni volver a marcar.
           </p>
-          <table>
+          <table className="tabla-compacta">
             <thead><tr><th>Motorista</th><th>Entregas</th><th>Autorizado por</th><th>Hora</th></tr></thead>
             <tbody>
               {autorizados?.map((a) => (

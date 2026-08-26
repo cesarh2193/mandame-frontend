@@ -85,7 +85,7 @@ export default function Asignaciones() {
       <p className="page-sub">Selecciona el CAD y la fecha, y asigna a todos los motoristas que necesites de una sola vez</p>
 
       <div className="card">
-        <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+        <div className="form-grid-3">
           <div className="field">
             <label>CAD (sucursal)</label>
             <select value={sucursalId} onChange={(e) => setSucursalId(e.target.value)}>
@@ -122,14 +122,14 @@ export default function Asignaciones() {
                 {todosSeleccionados ? 'Deseleccionar todos' : 'Seleccionar todos'}
               </button>
             </div>
-            <table>
+            <table className="tabla-compacta">
               <thead>
-                <tr><th></th><th>Motorista</th><th>Tipo</th><th>Disponibilidad</th></tr>
+                <tr><th className="col-checkbox"></th><th>Motorista</th><th>Tipo</th><th>Disponibilidad</th></tr>
               </thead>
               <tbody>
                 {disponibles?.map((m) => (
                   <tr key={m.motoristaId}>
-                    <td>
+                    <td className="col-checkbox">
                       <input
                         type="checkbox"
                         disabled={!m.disponible}
@@ -181,14 +181,14 @@ export default function Asignaciones() {
           </div>
           {busquedaOtroCad.trim().length >= 2 && (
             resultadosOtroCad?.length ? (
-              <table>
+              <table className="tabla-compacta">
                 <thead>
-                  <tr><th></th><th>Motorista</th><th>CAD de origen</th><th>Disponibilidad</th></tr>
+                  <tr><th className="col-checkbox"></th><th>Motorista</th><th>CAD de origen</th><th>Disponibilidad</th></tr>
                 </thead>
                 <tbody>
                   {resultadosOtroCad.map((m) => (
                     <tr key={m.motoristaId}>
-                      <td>
+                      <td className="col-checkbox">
                         <input
                           type="checkbox"
                           disabled={!m.disponible}
@@ -224,7 +224,7 @@ export default function Asignaciones() {
             placeholder="Ej. Alexander o 3029..."
           />
         </div>
-        <table>
+        <table className="tabla-compacta">
           <thead>
             <tr><th>Motorista</th><th>Tipo</th><th>Estado</th><th>Acción</th></tr>
           </thead>

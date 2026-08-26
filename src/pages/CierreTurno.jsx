@@ -93,7 +93,7 @@ export default function CierreTurno() {
         <p style={{ fontSize: 12, color: 'var(--text-3)' }}>
           Modo consulta: se autorizan al guardar el cierre, ya no se puede modificar ni volver a marcar.
         </p>
-        <table>
+        <table className="tabla-compacta">
           <thead>
             <tr>
               <th>Motorista</th><th>Entregas</th><th>Fecha ingreso</th><th>Fecha de salida</th>

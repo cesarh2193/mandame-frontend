@@ -114,7 +114,7 @@ export default function Boleta() {
       </p>
 
       <div className="card">
-        <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+        <div className="form-grid">
           <div className="field">
             <label>Fecha</label>
             <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
