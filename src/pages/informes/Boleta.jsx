@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { api } from '../../api/client';
 import { hoyLocal } from '../../utils/fecha';
+import { mostrarPickerSiSePuede } from '../../utils/dom';
 
 export default function Boleta() {
   const { usuario } = useAuth();
@@ -127,8 +128,8 @@ export default function Boleta() {
               placeholder="Escribe o selecciona un CAD"
               value={cadTexto}
               onChange={handleCadChange}
-              onFocus={(e) => e.target.showPicker?.()}
-              onClick={(e) => e.target.showPicker?.()}
+              onFocus={(e) => mostrarPickerSiSePuede(e.target)}
+              onClick={(e) => mostrarPickerSiSePuede(e.target)}
               autoComplete="off"
             />
             <datalist id="lista-cads">
