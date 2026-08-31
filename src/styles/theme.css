@@ -38,6 +38,8 @@ a{color:inherit;}
 .accesos-popover-sub{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-3);margin-bottom:4px;}
 .accesos-popover-lista{color:var(--text-2);line-height:1.5;max-height:160px;overflow-y:auto;}
 .scope{display:flex;align-items:center;gap:10px;font-size:12.5px;}
+.btn-icono-texto{display:flex;align-items:center;gap:7px;}
+.btn-icono-texto svg{width:15px;height:15px;flex-shrink:0;}
 .scope select{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 10px;font-size:12.5px;}
 
 .body-shell{display:flex;flex:1;min-height:0;}
@@ -127,11 +129,12 @@ td{padding:9px 8px;border-bottom:1px solid var(--line);}
 /* ---------- Responsive / móvil ---------- */
 @media (max-width: 860px){
   .hamburger-btn{display:flex;}
-  .topbar{padding:10px 12px;}
+  .topbar{padding:10px 12px;flex-wrap:nowrap;} /* que Modo oscuro/Cerrar sesión no se vayan a una 2da fila: quedan al nivel del logo, como íconos, para ahorrar espacio */
   .topbar-left{gap:10px;}
   .user-badge span{display:none;} /* en móvil solo se ve el avatar; el nombre sale en el popover de accesos */
-  .scope{gap:6px;}
-  .scope .btn{padding:8px 10px;font-size:12px;}
+  .scope{gap:6px;flex-shrink:0;}
+  .scope .btn{padding:8px;font-size:12px;}
+  .btn-texto{display:none;} /* en móvil el botón queda solo con el ícono */
 
   .mobile-personal-list{gap:8px;}
   .mobile-personal-card{padding:10px;}

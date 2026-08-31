@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { IconoLuna, IconoSol, IconoCerrarSesion } from './Iconos';
 import logoMandame from '../assets/logo-mandame.png';
 
 const DURACION_ACCESOS_MS = 5000;
@@ -58,10 +59,14 @@ export default function TopBar({ onAbrirMenu }) {
         </div>
       </div>
       <div className="scope">
-        <button className="btn btn-ghost" onClick={() => setOscuro((o) => !o)} title="Cambiar tema">
-          {oscuro ? 'Modo claro' : 'Modo oscuro'}
+        <button className="btn btn-ghost btn-icono-texto" onClick={() => setOscuro((o) => !o)} title="Cambiar tema">
+          {oscuro ? <IconoSol /> : <IconoLuna />}
+          <span className="btn-texto">{oscuro ? 'Modo claro' : 'Modo oscuro'}</span>
         </button>
-        <button className="btn btn-ghost" onClick={logout}>Cerrar sesión</button>
+        <button className="btn btn-ghost btn-icono-texto" onClick={logout} title="Cerrar sesión">
+          <IconoCerrarSesion />
+          <span className="btn-texto">Cerrar sesión</span>
+        </button>
       </div>
     </div>
   );

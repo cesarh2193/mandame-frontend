@@ -56,6 +56,39 @@ export function IconoCandadoAbierto() {
   );
 }
 
+// Estos dos son para el botón "Modo oscuro/claro" del TopBar (cambia de
+// ícono según el estado, igual que ya cambiaba el texto).
+
+export function IconoLuna() {
+  return (
+    <svg {...PROPS_ICONO}>
+      <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z" />
+    </svg>
+  );
+}
+
+export function IconoSol() {
+  return (
+    <svg {...PROPS_ICONO}>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2" /><path d="M12 20v2" />
+      <path d="m4.9 4.9 1.4 1.4" /><path d="m17.7 17.7 1.4 1.4" />
+      <path d="M2 12h2" /><path d="M20 12h2" />
+      <path d="m4.9 19.1 1.4-1.4" /><path d="m17.7 6.3 1.4-1.4" />
+    </svg>
+  );
+}
+
+export function IconoCerrarSesion() {
+  return (
+    <svg {...PROPS_ICONO}>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <path d="M16 17l5-5-5-5" />
+      <path d="M21 12H9" />
+    </svg>
+  );
+}
+
 // Los siguientes son para la barra inferior de navegación en móvil (BottomNav.jsx).
 
 export function IconoHoy() {
