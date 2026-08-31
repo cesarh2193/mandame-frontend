@@ -55,3 +55,61 @@ export function IconoCandadoAbierto() {
     </svg>
   );
 }
+
+// Los siguientes son para la barra inferior de navegación en móvil (BottomNav.jsx).
+
+export function IconoHoy() {
+  return (
+    <svg {...PROPS_ICONO}>
+      <path d="M3 11.5 12 4l9 7.5" />
+      <path d="M5 10v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9" />
+      <path d="M9 20v-6h6v6" />
+    </svg>
+  );
+}
+
+export function IconoPlanifica() {
+  return (
+    <svg {...PROPS_ICONO}>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18" />
+      <path d="M8 3v4" />
+      <path d="M16 3v4" />
+    </svg>
+  );
+}
+
+export function IconoAsistencia() {
+  return (
+    <svg {...PROPS_ICONO}>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 20c0-4 3.5-6 8-6s8 2 8 6" />
+      <path d="m9 13.5 2 2 3.5-3.5" />
+    </svg>
+  );
+}
+
+export function IconoCierre() {
+  return (
+    <svg {...PROPS_ICONO}>
+      <path d="M5 3v18" />
+      <path d="M5 4h13l-3 4 3 4H5" />
+    </svg>
+  );
+}
+
+export function IconoMas() {
+  return (
+    <svg {...PROPS_ICONO}>
+      <circle cx="5" cy="5" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="5" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="19" cy="5" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="5" cy="19" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="19" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="19" cy="19" r="1.6" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}

@@ -27,6 +27,7 @@ a{color:inherit;}
 .hamburger-btn{display:none;flex-direction:column;justify-content:center;gap:4px;width:32px;height:32px;background:transparent;border:1px solid rgba(255,255,255,.3);border-radius:8px;cursor:pointer;padding:0;flex-shrink:0;}
 .hamburger-btn span{display:block;width:16px;height:2px;background:#fff;margin:0 auto;border-radius:2px;}
 .sidebar-backdrop{display:none;}
+.bottom-nav{display:none;}
 .brand{font-size:16px;font-weight:700;}
 .brand-badge{background:#fff;border-radius:8px;padding:5px 12px;display:flex;align-items:center;box-shadow:0 2px 6px rgba(0,0,0,.18);}
 .brand-logo{height:26px;width:auto;display:block;}
@@ -152,8 +153,25 @@ td{padding:9px 8px;border-bottom:1px solid var(--line);}
     display:block; position:absolute; inset:0; background:rgba(10,14,24,.55); z-index:70;
   }
 
-  .main{padding:16px;max-width:100%;}
+  .main{padding:16px;max-width:100%;padding-bottom:calc(16px + 64px + env(safe-area-inset-bottom));}
   .login-card{padding:26px 20px;}
+
+  /* Barra fija de accesos directos al ciclo diario (Hoy/Planifica/
+     Asistencia/Cierre) + "Más" para el menú completo. Por debajo del
+     backdrop (70) y del sidebar (80): al abrir "Más" el cajón y el
+     fondo oscuro quedan por encima sin tener que ocultarla a mano. */
+  .bottom-nav{
+    display:flex; position:fixed; left:0; right:0; bottom:0; z-index:60;
+    background:var(--navy); border-top:1px solid rgba(255,255,255,.08);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .bottom-nav-item{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:2px; padding:8px 4px 7px; background:transparent; border:none; cursor:pointer;
+    color:#9AA7BE; text-decoration:none; font-size:10.5px; font-weight:600;
+  }
+  .bottom-nav-item svg{width:20px;height:20px;}
+  .bottom-nav-item.active{color:var(--amber);}
 
   .form-grid, .form-grid-3, .form-grid-4{grid-template-columns:1fr;}
   .form-grid-consulta{grid-template-columns:1fr;}

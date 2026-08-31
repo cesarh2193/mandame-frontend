@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { puedeVerItem } from '../utils/permisos';
 
 const SECCIONES = [
   { titulo: 'Operación diaria', items: [
@@ -39,16 +40,9 @@ export default function Sidebar({ abierto, onCerrar }) {
   const toggleSeccion = (titulo) =>
     setSeccionesCerradas((prev) => ({ ...prev, [titulo]: !prev[titulo] }));
 
-  const puedeVer = (item) => {
-    const rolesUsuario = usuario?.roles ?? [];
-    if (item.roles && !rolesUsuario.some((r) => item.roles.includes(r))) return false;
-    // rolesExcluidos solo oculta si NINGUNO de los roles del usuario lo salva
-    // (ej. alguien con Gerente + Supervisor sigue viendo lo que le toca por Supervisor).
-    if (item.rolesExcluidos && rolesUsuario.length > 0 && rolesUsuario.every((r) => item.rolesExcluidos.includes(r))) return false;
-    return true;
-  };
+  const rolesUsuario = usuario?.roles ?? [];
   const secciones = SECCIONES
-    .map((seccion) => ({ ...seccion, items: seccion.items.filter(puedeVer) }))
+    .map((seccion) => ({ ...seccion, items: seccion.items.filter((item) => puedeVerItem(item, rolesUsuario)) }))
     .filter((seccion) => seccion.items.length > 0);
 
   return (

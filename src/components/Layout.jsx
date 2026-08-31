@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
+import BottomNav from './BottomNav';
 
 // Un solo layout para computadora y teléfono. En pantallas angostas
 // (ver media query en theme.css) el Sidebar se convierte en un cajón
@@ -20,6 +21,7 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+      <BottomNav onAbrirMenu={() => setMenuAbierto(true)} />
     </div>
   );
 }
