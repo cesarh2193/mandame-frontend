@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useEnTurno, useTarifas, useCerrarTurno, useRepartosAutorizados, useRevertirCierre } from '../api/hooks';
@@ -132,6 +132,17 @@ function TarjetaCierre({ motorista, tarifas, abierto, onToggle, onGuardar, guard
   const [cantidad, setCantidad] = useState(0);
   const [tarifaId, setTarifaId] = useState(tarifas[0]?.id ?? '');
 
+  // Esta tarjeta se monta apenas carga la lista "en turno", que puede
+  // resolver antes que useTarifas() — si eso pasa, el useState de
+  // arriba queda fijo en '' para siempre (el inicializador solo corre
+  // una vez), aunque las tarifas ya hayan llegado. Este efecto lo
+  // corrige apenas hay tarifas disponibles y todavía no se eligió
+  // ninguna — así el <select> no queda "viéndose" seleccionado con la
+  // primera opción mientras por dentro el valor real sigue vacío.
+  useEffect(() => {
+    if (!tarifaId && tarifas.length > 0) setTarifaId(tarifas[0].id);
+  }, [tarifas, tarifaId]);
+
   const ahora = new Date();
   const hoy = aInputLocal(ahora).slice(0, 10);
   const [horaIngreso, setHoraIngreso] = useState(`${hoy}T${motorista.horaIngreso || '00:00'}`);
@@ -176,7 +187,8 @@ function TarjetaCierre({ motorista, tarifas, abierto, onToggle, onGuardar, guard
             </div>
             <div className="field">
               <label>Tarifa aplicable</label>
-              <select value={tarifaId} onChange={(e) => setTarifaId(e.target.value)}>
+              <select value={tarifaId} onChange={(e) => setTarifaId(e.target.value)} required>
+                <option value="" disabled>Selecciona...</option>
                 {tarifas.map((t) => <option key={t.id} value={t.id}>{t.descripcion}</option>)}
               </select>
             </div>
