@@ -17,6 +17,8 @@ export default function InformeSemanal() {
   const [buscando, setBuscando] = useState(false);
   const [generandoExcel, setGenerandoExcel] = useState(false);
   const [filas, setFilas] = useState(null);
+  const [paginacion, setPaginacion] = useState(null);
+  const [pagina, setPagina] = useState(1);
 
   // <input type="week"> entrega "2026-W38": lo partimos en año + semana.
   function parametrosSemana() {
@@ -32,22 +34,30 @@ export default function InformeSemanal() {
     return true;
   }
 
-  async function buscar() {
+  async function buscar(paginaABuscar = 1) {
     if (!semanaValida()) return;
     const { anio, semana } = parametrosSemana();
 
     setBuscando(true);
     try {
       const res = await api.get('/informes/semanal/preview', {
-        params: { anio, semana, sucursalId: sucursalId || undefined }
+        params: { anio, semana, sucursalId: sucursalId || undefined, pagina: paginaABuscar }
       });
-      setFilas(res.data ?? []);
+      setFilas(res.data?.filas ?? []);
+      setPaginacion(res.data ?? null);
+      setPagina(paginaABuscar);
     } catch (err) {
       setFilas(null);
+      setPaginacion(null);
       mostrarToast(err?.response?.data?.error || 'No se pudo consultar el informe semanal.', 'error');
     } finally {
       setBuscando(false);
     }
+  }
+
+  function irAPagina(nuevaPagina) {
+    if (!paginacion || nuevaPagina < 1 || nuevaPagina > paginacion.totalPaginas) return;
+    buscar(nuevaPagina);
   }
 
   async function exportarExcel() {
@@ -85,12 +95,12 @@ export default function InformeSemanal() {
         <div className="form-grid-3">
           <div className="field">
             <label>Semana</label>
-            <input type="week" value={semanaISO} onChange={(e) => { setSemanaISO(e.target.value); setFilas(null); }} />
+            <input type="week" value={semanaISO} onChange={(e) => { setSemanaISO(e.target.value); setFilas(null); setPaginacion(null); }} />
           </div>
 
           <div className="field">
             <label>CAD (sucursal)</label>
-            <select value={sucursalId} onChange={(e) => { setSucursalId(e.target.value); setFilas(null); }}>
+            <select value={sucursalId} onChange={(e) => { setSucursalId(e.target.value); setFilas(null); setPaginacion(null); }}>
               <option value="">Todos los CAD a los que tengo acceso</option>
               {usuario?.sucursales?.map((s) => (
                 <option key={s.id} value={s.id}>{s.nombre}</option>
@@ -100,7 +110,7 @@ export default function InformeSemanal() {
         </div>
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
-          <button className="btn btn-submodal" onClick={buscar} disabled={buscando || !semanaISO}>
+          <button className="btn btn-submodal" onClick={() => buscar(1)} disabled={buscando || !semanaISO}>
             {buscando ? 'Buscando...' : 'Buscar'}
           </button>
           <button className="btn btn-primary" onClick={exportarExcel} disabled={generandoExcel || !semanaISO}>
@@ -151,9 +161,34 @@ export default function InformeSemanal() {
                   </tbody>
                 </table>
               </div>
-              <div style={{ marginTop: 12, fontSize: 13, fontWeight: 700, color: 'var(--text-2)' }}>
-                Total motoristas: {filas.length} — Total general de la semana:{' '}
-                {q(filas.reduce((suma, f) => suma + f.totalGeneral, 0))}
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                flexWrap: 'wrap', gap: 8, marginTop: 12
+              }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-2)' }}>
+                  Total motoristas: {paginacion?.total ?? filas.length}
+                </span>
+                {paginacion?.totalPaginas > 1 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <button
+                      className="btn btn-ghost"
+                      onClick={() => irAPagina(pagina - 1)}
+                      disabled={buscando || pagina <= 1}
+                    >
+                      Anterior
+                    </button>
+                    <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}>
+                      Página {pagina} de {paginacion.totalPaginas}
+                    </span>
+                    <button
+                      className="btn btn-ghost"
+                      onClick={() => irAPagina(pagina + 1)}
+                      disabled={buscando || pagina >= paginacion.totalPaginas}
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                )}
               </div>
             </>
           )}

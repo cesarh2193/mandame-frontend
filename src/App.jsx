@@ -162,7 +162,7 @@ export default function App() {
             <Route
               path="/informes/semanal"
               element={
-                <ProtectedRoute roles={['Admin', 'Gerente', 'Supervisor']}>
+                <ProtectedRoute roles={['Admin']}>
                   <InformeSemanal />
                 </ProtectedRoute>
               }
