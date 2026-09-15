@@ -39,7 +39,7 @@ const TIPOS_DOCUMENTO = [
 const CATEGORIAS_DOCUMENTO = ['Identificación', 'Administrativo', 'Salud'];
 const POR_PAGINA = 20;
 const FORM_VACIO = {
-  codigo: '', nombres: '', apellidos: '', dpi: '', puesto: 'Motorista', empresaId: '', sucursalId: '',
+  nombres: '', apellidos: '', dpi: '', puesto: 'Motorista', empresaId: '', sucursalId: '',
   tambienMotorista: true, tipoMotorista: 'FIJO', placa: '', licencia: '',
   telefono: '', correo: '',
   contactoEmergenciaNombre: '', contactoEmergenciaTelefono: '', contactoEmergenciaRelacion: '',
@@ -107,7 +107,6 @@ export default function Personal() {
   const [laboralAbierta, setLaboralAbierta] = useState(false);
 
   const [busqueda, setBusqueda] = useState('');
-  const [mostrarBajas, setMostrarBajas] = useState(false);
   const [pagina, setPagina] = useState(1);
   const [esMovil, setEsMovil] = useState(() => window.matchMedia('(max-width: 860px)').matches);
 
@@ -125,9 +124,6 @@ export default function Personal() {
   const activo = creando ? { valores: form, set: setForm } : editando ? { valores: editando, set: setEditando } : null;
 
   const personalFiltrado = (personal ?? []).filter((p) => {
-    // "Mostrar dados de baja" es exclusivo: si está marcado, solo
-    // inactivos; si no, solo activos (nunca mezclados).
-    if (mostrarBajas ? p.estado !== 'I' : p.estado === 'I') return false;
     const q = busqueda.trim().toLowerCase();
     if (!q) return true;
     return (
@@ -144,11 +140,6 @@ export default function Personal() {
 
   function onBuscar(valor) {
     setBusqueda(valor);
-    setPagina(1);
-  }
-
-  function onMostrarBajas(valor) {
-    setMostrarBajas(valor);
     setPagina(1);
   }
 
@@ -202,7 +193,7 @@ export default function Personal() {
       mostrarToast('El DPI debe tener 13 dígitos.', 'error');
       return;
     }
-    const { fotoArchivo, docArchivos, tieneFoto, documentosSubidos, id, ...payload } = editando;
+    const { fotoArchivo, docArchivos, tieneFoto, documentosSubidos, codigo, id, ...payload } = editando;
     mut.actualizar.mutate(
       { id, ...payload },
       {
@@ -221,6 +212,7 @@ export default function Personal() {
   function datosFormulario(p) {
     return {
       id: p.id,
+      codigo: p.codigo,
       nombres: p.nombrePila,
       apellidos: p.apellidoPila,
       dpi: p.dpi,
@@ -277,10 +269,6 @@ export default function Personal() {
             <input value={busqueda} onChange={(e) => onBuscar(e.target.value)} placeholder="Ej. Abner, 3029, Digitador, Toledo..." />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-              <input type="checkbox" checked={mostrarBajas} onChange={(e) => onMostrarBajas(e.target.checked)} />
-              Mostrar dados de baja
-            </label>
             <button type="button" className="btn btn-primary" onClick={() => setCreando(true)}>
               + Nuevo personal
             </button>
@@ -423,11 +411,10 @@ export default function Personal() {
         <FotoUploader archivo={form.fotoArchivo} onCambiar={(archivo) => setForm({ ...form, fotoArchivo: archivo })} />
 
         <Seccion titulo="Datos personales" />
+        <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: -6 }}>
+          El código se asigna solo al guardar (correlativo automático) — no se elige a mano.
+        </p>
         <div className="form-grid-3">
-          <div className="field">
-            <label>Código (correlativo de la empresa)</label>
-            <input value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value.toUpperCase() })} required />
-          </div>
           <div className="field">
             <label>Nombres</label>
             <input value={form.nombres} onChange={(e) => setForm({ ...form, nombres: e.target.value.toUpperCase() })} required />
@@ -637,6 +624,7 @@ export default function Personal() {
 
             <Seccion titulo="Datos personales" />
             <div className="form-grid-3">
+              <Campo label="Código" valor={editando.codigo} />
               <div className="field">
                 <label>Nombres</label>
                 <input value={editando.nombres} onChange={(e) => setEditando({ ...editando, nombres: e.target.value.toUpperCase() })} />
