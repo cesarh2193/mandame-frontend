@@ -108,7 +108,7 @@ export default function Asignaciones() {
 
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, marginBottom: 4 }}>
           <input type="checkbox" checked={esFeriado} onChange={(e) => setEsFeriado(e.target.checked)} />
-          Es día feriado (mostrar también a los motoristas de turno, aunque no sea sábado o domingo)
+          Es Asueto (mostrar también a los motoristas de turno, aunque no sea sábado o domingo)
         </label>
 
         {sinPlanificacion ? (
