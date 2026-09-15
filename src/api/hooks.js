@@ -85,10 +85,10 @@ export function useAnularPlanificacion() {
 }
 
 // ---------- Asignaciones ----------
-export function useMotoristasDisponibles(sucursalId, fecha) {
+export function useMotoristasDisponibles(sucursalId, fecha, esFeriado) {
   return useQuery({
-    queryKey: ['motoristas-disponibles', sucursalId, fecha],
-    queryFn: () => api.get('/asignaciones/disponibles', { params: { sucursalId, fecha } }).then((r) => r.data),
+    queryKey: ['motoristas-disponibles', sucursalId, fecha, esFeriado],
+    queryFn: () => api.get('/asignaciones/disponibles', { params: { sucursalId, fecha, esFeriado: esFeriado || undefined } }).then((r) => r.data),
     enabled: !!sucursalId && !!fecha
   });
 }

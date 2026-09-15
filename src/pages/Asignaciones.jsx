@@ -14,6 +14,7 @@ export default function Asignaciones() {
   const [sucursalId, setSucursalId] = useState(usuario?.sucursales?.[0]?.id ?? '');
   const [fecha, setFecha] = useState(hoy);
   const [tipo, setTipo] = useState('TITULAR');
+  const [esFeriado, setEsFeriado] = useState(false);
   const [seleccionados, setSeleccionados] = useState([]);
   const [busquedaActivas, setBusquedaActivas] = useState('');
   const [busquedaOtroCad, setBusquedaOtroCad] = useState('');
@@ -27,7 +28,7 @@ export default function Asignaciones() {
     setBusquedaOtroCad('');
   }, [sucursalId, fecha]);
 
-  const { data: respuestaDisponibles } = useMotoristasDisponibles(sucursalId, fecha);
+  const { data: respuestaDisponibles } = useMotoristasDisponibles(sucursalId, fecha, esFeriado);
   const sinPlanificacion = !!respuestaDisponibles?.sinPlanificacion;
   const disponibles = respuestaDisponibles?.motoristas;
   const { data: activas } = useAsignacionesActivas(sucursalId);
@@ -104,6 +105,11 @@ export default function Asignaciones() {
             </select>
           </div>
         </div>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, marginBottom: 4 }}>
+          <input type="checkbox" checked={esFeriado} onChange={(e) => setEsFeriado(e.target.checked)} />
+          Es día feriado (mostrar también a los motoristas de turno, aunque no sea sábado o domingo)
+        </label>
 
         {sinPlanificacion ? (
           <p style={{ color: 'var(--coral-dark)', background: 'var(--coral-light)', padding: '10px 12px', borderRadius: 8, fontSize: 12.5 }}>
