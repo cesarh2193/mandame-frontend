@@ -20,6 +20,7 @@ import RevisionBoletas from './pages/informes/RevisionBoletas';
 import AsistenciaInforme from './pages/informes/AsistenciaInforme';
 import AsistenciaGeneral from './pages/informes/AsistenciaGeneral';
 import FichaPersonalInforme from './pages/informes/FichaPersonalInforme';
+import InformeSemanal from './pages/informes/InformeSemanal';
 import Empresas from './pages/catalogos/Empresas';
 import Tarifas from './pages/catalogos/Tarifas';
 import Personal from './pages/catalogos/Personal';
@@ -155,6 +156,14 @@ export default function App() {
               element={
                 <ProtectedRoute rolesExcluidos={['Motorista']}>
                   <FichaPersonalInforme />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/informes/semanal"
+              element={
+                <ProtectedRoute roles={['Admin', 'Gerente', 'Supervisor']}>
+                  <InformeSemanal />
                 </ProtectedRoute>
               }
             />

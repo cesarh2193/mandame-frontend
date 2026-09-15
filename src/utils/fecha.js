@@ -19,3 +19,18 @@ export function formatearFechaDisplay(fecha) {
   const [anio, mes, dia] = String(fecha).slice(0, 10).split('-');
   return `${dia}/${mes}/${anio}`;
 }
+
+// Año + número de semana ISO (lunes a domingo) de hoy, como valor listo
+// para un <input type="week"> (formato "YYYY-Www"). Mismo cálculo que
+// calcularSemanaISO en el backend, para que "semana actual" coincida
+// en frontend y backend.
+export function semanaActualISO() {
+  const hoy = new Date();
+  const objetivo = new Date(hoy.valueOf());
+  const diaSemana = (hoy.getDay() + 6) % 7;
+  objetivo.setDate(objetivo.getDate() - diaSemana + 3);
+  const primerJueves = new Date(objetivo.getFullYear(), 0, 4);
+  const diff = objetivo - primerJueves;
+  const semana = 1 + Math.round(diff / (7 * 24 * 60 * 60 * 1000));
+  return `${objetivo.getFullYear()}-W${String(semana).padStart(2, '0')}`;
+}

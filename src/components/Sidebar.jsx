@@ -22,7 +22,8 @@ const SECCIONES = [
     { to: '/informes/revision-boletas', label: 'Revisión de boletas', rolesExcluidos: ['Motorista'] },
     { to: '/informes/asistencia', label: 'Informe de asistencia', rolesExcluidos: ['Motorista'] },
     { to: '/informes/asistencia-general', label: 'Asistencia general', rolesExcluidos: ['Motorista'] },
-    { to: '/informes/ficha-personal', label: 'Ficha de personal', rolesExcluidos: ['Motorista'] }
+    { to: '/informes/ficha-personal', label: 'Ficha de personal', rolesExcluidos: ['Motorista'] },
+    { to: '/informes/semanal', label: 'Informe semanal', roles: ['Admin', 'Gerente', 'Supervisor'] }
   ]},
   { titulo: 'Administración', items: [
     { to: '/catalogos/empresas', label: 'Empresas y sucursales', roles: ['Admin', 'Gerente'] },
