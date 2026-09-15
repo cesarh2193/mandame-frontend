@@ -30,6 +30,9 @@ export default function Empresas() {
       );
     })
     .sort((a, b) => {
+      // Activas primero siempre — las inactivas quedan al final de la
+      // lista en vez de mezcladas donde les toque alfabéticamente.
+      if (a.estado !== b.estado) return a.estado === 'A' ? -1 : 1;
       const porEmpresa = a.empresaNombre.localeCompare(b.empresaNombre, 'es', { sensitivity: 'base' });
       if (porEmpresa !== 0) return porEmpresa;
       return a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' });

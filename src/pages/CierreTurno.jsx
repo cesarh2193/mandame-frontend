@@ -22,7 +22,7 @@ export default function CierreTurno() {
   const [busqueda, setBusqueda] = useState('');
   const [abierto, setAbierto] = useState(null);
 
-  const esAdmin = (usuario?.roles ?? []).includes('Admin');
+  const puedeRevertir = (usuario?.roles ?? []).some((r) => ['Admin', 'Supervisor'].includes(r));
   const { data: enTurno } = useEnTurno(sucursalId);
   const { data: tarifas } = useTarifas();
   const cerrarTurno = useCerrarTurno();
@@ -97,7 +97,7 @@ export default function CierreTurno() {
           <thead>
             <tr>
               <th>Motorista</th><th>Entregas</th><th>Fecha ingreso</th><th>Fecha de salida</th>
-              {esAdmin && <th>Acciones</th>}
+              {puedeRevertir && <th>Acciones</th>}
             </tr>
           </thead>
           <tbody>
@@ -107,7 +107,7 @@ export default function CierreTurno() {
                 <td>{a.entregas}</td>
                 <td>{a.horaIngreso}</td>
                 <td>{a.horaSalida}</td>
-                {esAdmin && (
+                {puedeRevertir && (
                   <td>
                     <button
                       type="button"
