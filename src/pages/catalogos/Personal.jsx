@@ -87,7 +87,8 @@ function colorCompletitud(porcentaje) {
 }
 
 export default function Personal() {
-  const { data: personal } = usePersonal();
+  const [mostrarBajas, setMostrarBajas] = useState(false);
+  const { data: personal } = usePersonal(mostrarBajas ? 'I' : undefined);
   const mut = usePersonalMutation();
   const subirFoto = useSubirFotoPersonal();
   const subirDocumento = useSubirDocumentoPersonal();
@@ -140,6 +141,11 @@ export default function Personal() {
 
   function onBuscar(valor) {
     setBusqueda(valor);
+    setPagina(1);
+  }
+
+  function onMostrarBajas(valor) {
+    setMostrarBajas(valor);
     setPagina(1);
   }
 
@@ -269,6 +275,10 @@ export default function Personal() {
             <input value={busqueda} onChange={(e) => onBuscar(e.target.value)} placeholder="Ej. Abner, 3029, Digitador, Toledo..." />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+              <input type="checkbox" checked={mostrarBajas} onChange={(e) => onMostrarBajas(e.target.checked)} />
+              Mostrar dados de baja
+            </label>
             <button type="button" className="btn btn-primary" onClick={() => setCreando(true)}>
               + Nuevo personal
             </button>

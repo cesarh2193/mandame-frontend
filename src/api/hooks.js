@@ -261,7 +261,10 @@ export const useSucursalesMutation = () => useCatalogoMutation('sucursales');
 export const useTarifasCatalogo = () => useCatalogo('tarifas');
 export const useTarifasMutation = () => useCatalogoMutation('tarifas');
 
-export const usePersonal = () => useCatalogo('personal');
+export const usePersonal = (estado) => useQuery({
+  queryKey: ['personal', estado],
+  queryFn: () => api.get('/personal', { params: { estado } }).then((r) => r.data)
+});
 export const usePersonalMutation = () => useCatalogoMutation('personal');
 
 export function useSubirFotoPersonal() {
