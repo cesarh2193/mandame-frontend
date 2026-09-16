@@ -101,6 +101,17 @@ td{padding:9px 8px;border-bottom:1px solid var(--line);}
 .mobile-cierre-label{font-size:10px;text-transform:uppercase;color:var(--text-3);font-weight:800;letter-spacing:.4px;}
 .mobile-cierre-value{font-size:14px;color:var(--text);font-weight:800;}
 
+.mobile-usuario-list{display:flex;flex-direction:column;gap:10px;}
+.mobile-usuario-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;box-shadow:0 2px 8px rgba(15,23,42,.06);}
+.mobile-usuario-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding-bottom:8px;border-bottom:1px solid var(--line);}
+.mobile-usuario-user{font-size:14.5px;font-weight:800;color:var(--text);}
+.mobile-usuario-nombre{font-size:12px;color:var(--text-2);margin-top:2px;}
+.mobile-usuario-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;flex-shrink:0;}
+.mobile-usuario-actions .icon-btn{border:1px solid var(--line);background:var(--input-bg);}
+.mobile-usuario-meta{display:grid;grid-template-columns:70px 1fr;align-items:center;gap:8px;}
+.mobile-usuario-label{font-size:10.5px;text-transform:uppercase;color:var(--text-3);font-weight:800;letter-spacing:.5px;}
+.mobile-usuario-value{font-size:12.5px;color:var(--text);font-weight:700;}
+
 /* mantiene visible la primera columna (ej. nombre del CAD) al
    escrolear horizontal en tablas anchas, sobre todo en móvil */
 .tabla-sticky th:first-child,.tabla-sticky td:first-child{position:sticky;left:0;background:var(--card);}
@@ -153,6 +164,10 @@ td{padding:9px 8px;border-bottom:1px solid var(--line);}
   .mobile-cierre-list{gap:8px;}
   .mobile-cierre-card{padding:10px;}
   .mobile-cierre-name{font-size:14px;}
+
+  .mobile-usuario-list{gap:8px;}
+  .mobile-usuario-card{padding:10px;}
+  .mobile-usuario-user{font-size:14px;}
 
   .body-shell{position:relative;overflow:hidden;}
   .sidebar{

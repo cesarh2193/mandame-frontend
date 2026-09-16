@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Modal from '../../components/Modal';
 import { useUsuarios, useUsuariosSinCuenta, useUsuariosMutation, useSucursales } from '../../api/hooks';
 import { useToast } from '../../context/ToastContext';
@@ -44,6 +44,15 @@ export default function Usuarios() {
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('TODOS');
   const [pagina, setPagina] = useState(1);
+  const [esMovil, setEsMovil] = useState(() => window.matchMedia('(max-width: 860px)').matches);
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 860px)');
+    const onChange = () => setEsMovil(media.matches);
+    onChange();
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
 
   const usuariosFiltrados = (usuarios ?? []).filter((u) => {
     if (filtroEstado === 'A' && u.estado === 'BLOQUEADO') return false;
@@ -214,26 +223,16 @@ export default function Usuarios() {
             </select>
           </div>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Usuario</th><th className="col-ocultar-movil">Nombre</th><th className="col-ocultar-movil">Correo</th><th className="col-ocultar-movil">Roles</th>
-              <th>CAD asignados</th><th>Estado</th><th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
+        {esMovil ? (
+          <div className="mobile-usuario-list">
             {usuariosPagina.map((u) => (
-              <tr key={u.id}>
-                <td>{u.usuario}</td><td className="col-ocultar-movil">{u.nombre}</td><td className="col-ocultar-movil">{u.correo}</td>
-                <td className="col-ocultar-movil">{u.roles.map(etiquetaRol).join(', ')}</td>
-                <td>{u.sucursales?.length ? u.sucursales.map((s) => s.nombre).join(', ') : '—'}</td>
-                <td>
-                  <span className={`status-pill ${u.estado === 'BLOQUEADO' ? 'warn' : 'ok'}`}>
-                    {u.estado === 'BLOQUEADO' ? 'Bloqueado' : 'Activo'}
-                  </span>
-                </td>
-                <td style={{ whiteSpace: 'nowrap' }}>
-                  <div style={{ display: 'flex', gap: 6 }}>
+              <div key={u.id} className="mobile-usuario-card">
+                <div className="mobile-usuario-top">
+                  <div>
+                    <div className="mobile-usuario-user">{u.usuario}</div>
+                    {u.nombre && <div className="mobile-usuario-nombre">{u.nombre}</div>}
+                  </div>
+                  <div className="mobile-usuario-actions">
                     <button type="button" className="btn btn-ghost icon-btn" title="Ver información" onClick={() => setViendo(u)}>
                       <IconoOjo />
                     </button>
@@ -255,11 +254,74 @@ export default function Usuarios() {
                       {u.estado === 'BLOQUEADO' ? <IconoCandadoAbierto /> : <IconoCandado />}
                     </button>
                   </div>
-                </td>
-              </tr>
+                </div>
+                <div className="mobile-usuario-meta">
+                  <span className="mobile-usuario-label">CAD</span>
+                  <span className="mobile-usuario-value">
+                    {u.sucursales?.length ? u.sucursales.map((s) => s.nombre).join(', ') : '—'}
+                  </span>
+                </div>
+                <div className="mobile-usuario-meta">
+                  <span className="mobile-usuario-label">Roles</span>
+                  <span className="mobile-usuario-value">{u.roles.map(etiquetaRol).join(', ') || '—'}</span>
+                </div>
+                <div className="mobile-usuario-meta">
+                  <span className="mobile-usuario-label">Estado</span>
+                  <span className={`status-pill ${u.estado === 'BLOQUEADO' ? 'warn' : 'ok'}`}>
+                    {u.estado === 'BLOQUEADO' ? 'Bloqueado' : 'Activo'}
+                  </span>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Usuario</th><th className="col-ocultar-movil">Nombre</th><th className="col-ocultar-movil">Correo</th><th className="col-ocultar-movil">Roles</th>
+                <th>CAD asignados</th><th>Estado</th><th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {usuariosPagina.map((u) => (
+                <tr key={u.id}>
+                  <td>{u.usuario}</td><td className="col-ocultar-movil">{u.nombre}</td><td className="col-ocultar-movil">{u.correo}</td>
+                  <td className="col-ocultar-movil">{u.roles.map(etiquetaRol).join(', ')}</td>
+                  <td>{u.sucursales?.length ? u.sucursales.map((s) => s.nombre).join(', ') : '—'}</td>
+                  <td>
+                    <span className={`status-pill ${u.estado === 'BLOQUEADO' ? 'warn' : 'ok'}`}>
+                      {u.estado === 'BLOQUEADO' ? 'Bloqueado' : 'Activo'}
+                    </span>
+                  </td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button type="button" className="btn btn-ghost icon-btn" title="Ver información" onClick={() => setViendo(u)}>
+                        <IconoOjo />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost icon-btn"
+                        title="Editar"
+                        onClick={() => setEditando({ ...u, sucursalIds: (u.sucursales ?? []).map((s) => s.id), nuevaPassword: '' })}
+                      >
+                        <IconoLapiz />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost icon-btn"
+                        title={u.estado === 'BLOQUEADO' ? 'Desbloquear' : 'Bloquear'}
+                        disabled={mut.actualizar.isPending}
+                        onClick={() => onBloquear(u)}
+                      >
+                        {u.estado === 'BLOQUEADO' ? <IconoCandadoAbierto /> : <IconoCandado />}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
         {usuariosFiltrados.length > 0 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
             <span style={{ fontSize: 12, color: 'var(--text-3)' }}>
