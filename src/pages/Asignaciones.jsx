@@ -187,7 +187,7 @@ export default function Asignaciones() {
                   disabled={darDescanso.isPending || seleccionados.length === 0}
                   title="Solo para motoristas Fijos: se le paga el día completo sin que tenga que marcar ingreso/salida ni cerrar turno."
                 >
-                  {darDescanso.isPending ? 'Guardando...' : 'Dar descanso pagado'}
+                  {darDescanso.isPending ? 'Guardando...' : 'Descanso'}
                 </button>
                 <button className="btn btn-primary" onClick={onAsignar} disabled={asignarLote.isPending || seleccionados.length === 0}>
                   Asignar seleccionados a esta CAD
@@ -195,7 +195,7 @@ export default function Asignaciones() {
               </div>
             </div>
             <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 6 }}>
-              "Dar descanso pagado" es para motoristas Fijos que tienen su día libre de la semana hoy: queda
+              "Descanso" es para motoristas Fijos que tienen su día libre de la semana hoy: queda
               autorizado de una vez, con 0 repartos, y cuenta igual que un día trabajado en el pago semanal.
             </p>
             {asignarLote.isError && (
