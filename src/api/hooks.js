@@ -119,6 +119,18 @@ export function useAsignarLote() {
   });
 }
 
+export function useDarDescanso() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload) => api.post('/asignaciones/descanso', payload).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['motoristas-disponibles'] });
+      qc.invalidateQueries({ queryKey: ['asignaciones-activas'] });
+      qc.invalidateQueries({ queryKey: ['repartos-autorizados'] });
+    }
+  });
+}
+
 export function useAnularAsignacion() {
   const qc = useQueryClient();
   return useMutation({

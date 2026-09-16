@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import {
-  useMotoristasDisponibles, useAsignacionesActivas, useAsignarLote, useAnularAsignacion, useBuscarOtroCad
+  useMotoristasDisponibles, useAsignacionesActivas, useAsignarLote, useAnularAsignacion, useBuscarOtroCad,
+  useDarDescanso
 } from '../api/hooks';
 import { hoyLocal } from '../utils/fecha';
 
@@ -34,6 +35,7 @@ export default function Asignaciones() {
   const { data: activas } = useAsignacionesActivas(sucursalId);
   const { data: resultadosOtroCad } = useBuscarOtroCad(sucursalId, fecha, busquedaOtroCad);
   const asignarLote = useAsignarLote();
+  const darDescanso = useDarDescanso();
   const anular = useAnularAsignacion();
 
   function toggleSeleccion(id) {
@@ -60,6 +62,26 @@ export default function Asignaciones() {
           setSeleccionados([]);
           mostrarToast(`Se asignó a ${data.asignados} motorista(s) y se marcó su ingreso de asistencia de una vez.`);
         }
+      }
+    );
+  }
+
+  function onDarDescanso() {
+    if (seleccionados.length === 0) return;
+    const seleccionadosInfo = (disponibles ?? []).filter((m) => seleccionados.includes(m.motoristaId));
+    const algunoTurno = seleccionadosInfo.some((m) => m.tipoMotorista !== 'FIJO');
+    if (algunoTurno) {
+      mostrarToast('El descanso pagado solo aplica a motoristas Fijos. Quita de la selección a los de Turno.', 'error');
+      return;
+    }
+    darDescanso.mutate(
+      { sucursalId: Number(sucursalId), fecha, motoristaIds: seleccionados },
+      {
+        onSuccess: (data) => {
+          setSeleccionados([]);
+          mostrarToast(`${data.descansados} motorista(s) recibieron su descanso pagado de hoy, ya autorizado.`);
+        },
+        onError: (err) => mostrarToast(err?.response?.data?.error || 'No se pudo registrar el descanso.', 'error')
       }
     );
   }
@@ -155,12 +177,27 @@ export default function Asignaciones() {
               </tbody>
             </table>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
               <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}>{seleccionados.length} seleccionados</span>
-              <button className="btn btn-primary" onClick={onAsignar} disabled={asignarLote.isPending || seleccionados.length === 0}>
-                Asignar seleccionados a esta CAD
-              </button>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={onDarDescanso}
+                  disabled={darDescanso.isPending || seleccionados.length === 0}
+                  title="Solo para motoristas Fijos: se le paga el día completo sin que tenga que marcar ingreso/salida ni cerrar turno."
+                >
+                  {darDescanso.isPending ? 'Guardando...' : 'Dar descanso pagado'}
+                </button>
+                <button className="btn btn-primary" onClick={onAsignar} disabled={asignarLote.isPending || seleccionados.length === 0}>
+                  Asignar seleccionados a esta CAD
+                </button>
+              </div>
             </div>
+            <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 6 }}>
+              "Dar descanso pagado" es para motoristas Fijos que tienen su día libre de la semana hoy: queda
+              autorizado de una vez, con 0 repartos, y cuenta igual que un día trabajado en el pago semanal.
+            </p>
             {asignarLote.isError && (
               <p style={{ color: 'var(--coral-dark)', background: 'var(--coral-light)', padding: '10px 12px', borderRadius: 8, fontSize: 12.5, marginTop: 10 }}>
                 {asignarLote.error?.response?.data?.error || 'No se pudo asignar.'}
