@@ -21,6 +21,15 @@ export default function CierreTurno() {
   const [sucursalId, setSucursalId] = useState(usuario?.sucursales?.[0]?.id ?? '');
   const [busqueda, setBusqueda] = useState('');
   const [abierto, setAbierto] = useState(null);
+  const [esMovil, setEsMovil] = useState(() => window.matchMedia('(max-width: 860px)').matches);
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 860px)');
+    const onChange = () => setEsMovil(media.matches);
+    onChange();
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
 
   const puedeRevertir = (usuario?.roles ?? []).some((r) => ['Admin', 'Supervisor'].includes(r));
   const { data: enTurno } = useEnTurno(sucursalId);
@@ -95,22 +104,13 @@ export default function CierreTurno() {
         <p style={{ fontSize: 12, color: 'var(--text-3)' }}>
           Modo consulta: se autorizan al guardar el cierre, ya no se puede modificar ni volver a marcar.
         </p>
-        <table className="tabla-compacta">
-          <thead>
-            <tr>
-              <th>Motorista</th><th>Entregas</th><th>Fecha ingreso</th><th>Fecha de salida</th>
-              {puedeRevertir && <th>Acciones</th>}
-            </tr>
-          </thead>
-          <tbody>
+        {esMovil ? (
+          <div className="mobile-cierre-list">
             {autorizadosHoy?.map((a) => (
-              <tr key={a.repartoId}>
-                <td>{a.nombre}</td>
-                <td>{a.entregas}</td>
-                <td>{a.horaIngreso}</td>
-                <td>{a.horaSalida}</td>
-                {puedeRevertir && (
-                  <td>
+              <div key={a.repartoId} className="mobile-cierre-card">
+                <div className="mobile-cierre-top">
+                  <div className="mobile-cierre-name">{a.nombre}</div>
+                  {puedeRevertir && (
                     <button
                       type="button"
                       className="btn btn-ghost"
@@ -119,12 +119,57 @@ export default function CierreTurno() {
                     >
                       Revertir
                     </button>
-                  </td>
-                )}
-              </tr>
+                  )}
+                </div>
+                <div className="mobile-cierre-stats">
+                  <div className="mobile-cierre-stat">
+                    <span className="mobile-cierre-label">Entregas</span>
+                    <span className="mobile-cierre-value">{a.entregas}</span>
+                  </div>
+                  <div className="mobile-cierre-stat">
+                    <span className="mobile-cierre-label">Ingreso</span>
+                    <span className="mobile-cierre-value">{a.horaIngreso}</span>
+                  </div>
+                  <div className="mobile-cierre-stat">
+                    <span className="mobile-cierre-label">Salida</span>
+                    <span className="mobile-cierre-value">{a.horaSalida}</span>
+                  </div>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        ) : (
+          <table className="tabla-compacta">
+            <thead>
+              <tr>
+                <th>Motorista</th><th>Entregas</th><th>Fecha ingreso</th><th>Fecha de salida</th>
+                {puedeRevertir && <th>Acciones</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {autorizadosHoy?.map((a) => (
+                <tr key={a.repartoId}>
+                  <td>{a.nombre}</td>
+                  <td>{a.entregas}</td>
+                  <td>{a.horaIngreso}</td>
+                  <td>{a.horaSalida}</td>
+                  {puedeRevertir && (
+                    <td>
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        onClick={() => revertir(a.repartoId, a.nombre)}
+                        disabled={revertirCierre.isPending}
+                      >
+                        Revertir
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

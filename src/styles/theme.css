@@ -92,6 +92,15 @@ td{padding:9px 8px;border-bottom:1px solid var(--line);}
 .mobile-personal-label{font-size:10.5px;text-transform:uppercase;color:var(--text-3);font-weight:800;letter-spacing:.5px;}
 .mobile-personal-value{font-size:12.5px;color:var(--text);font-weight:700;}
 
+.mobile-cierre-list{display:flex;flex-direction:column;gap:10px;}
+.mobile-cierre-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;box-shadow:0 2px 8px rgba(15,23,42,.06);}
+.mobile-cierre-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.mobile-cierre-name{font-size:14.5px;font-weight:800;line-height:1.35;color:var(--text);}
+.mobile-cierre-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;border-top:1px solid var(--line);padding-top:10px;}
+.mobile-cierre-stat{display:flex;flex-direction:column;gap:2px;align-items:center;text-align:center;}
+.mobile-cierre-label{font-size:10px;text-transform:uppercase;color:var(--text-3);font-weight:800;letter-spacing:.4px;}
+.mobile-cierre-value{font-size:14px;color:var(--text);font-weight:800;}
+
 /* mantiene visible la primera columna (ej. nombre del CAD) al
    escrolear horizontal en tablas anchas, sobre todo en móvil */
 .tabla-sticky th:first-child,.tabla-sticky td:first-child{position:sticky;left:0;background:var(--card);}
@@ -140,6 +149,10 @@ td{padding:9px 8px;border-bottom:1px solid var(--line);}
   .mobile-personal-card{padding:10px;}
   .mobile-personal-name{font-size:14px;}
   .mobile-personal-meta{grid-template-columns:90px 1fr;}
+
+  .mobile-cierre-list{gap:8px;}
+  .mobile-cierre-card{padding:10px;}
+  .mobile-cierre-name{font-size:14px;}
 
   .body-shell{position:relative;overflow:hidden;}
   .sidebar{
