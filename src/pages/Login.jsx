@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { rutaInicio } from '../utils/rutas';
 import logoMandame from '../assets/logo-mandame.png';
@@ -12,7 +12,7 @@ export default function Login() {
 
   const requiereRestablecer = loginError?.response?.data?.code === 'PASSWORD_RESET_REQUIRED';
   const mensajeError = requiereRestablecer
-    ? 'Esta cuenta viene de la migración y no tiene contraseña. Restablécela abajo.'
+    ? 'Esta cuenta viene de la migración y no tiene contraseña. Contacta a un Administrador para restablecerla.'
     : 'Usuario o contraseña incorrectos.';
 
   async function onSubmit(e) {
@@ -59,10 +59,6 @@ export default function Login() {
         <button className="btn btn-primary" style={{ width: '100%' }} disabled={loginPending}>
           {loginPending ? 'Ingresando...' : 'Iniciar sesión'}
         </button>
-
-        <p style={{ textAlign: 'center', marginTop: 16, fontSize: 12.5 }}>
-          <Link to="/restablecer">¿Cuenta migrada sin contraseña? Restablécela aquí</Link>
-        </p>
       </form>
     </div>
   );
