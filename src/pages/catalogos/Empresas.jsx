@@ -4,6 +4,8 @@ import { useEmpresas, useEmpresasMutation, useSucursales, useSucursalesMutation,
 import { useToast } from '../../context/ToastContext';
 import { IconoBasura, IconoCheck } from '../../components/Iconos';
 
+const POR_PAGINA_SUCURSALES = 15;
+
 export default function Empresas() {
   const mostrarToast = useToast();
   const { data: empresas } = useEmpresas();
@@ -14,6 +16,7 @@ export default function Empresas() {
   const { data: sucursales } = useSucursales();
   const sucursalMut = useSucursalesMutation();
   const [busquedaSucursal, setBusquedaSucursal] = useState('');
+  const [paginaSucursal, setPaginaSucursal] = useState(1);
   const [sucursalForm, setSucursalForm] = useState({ empresaId: '', codigoCad: '', nombre: '', supervisorId: '' });
   const { data: personal } = usePersonal();
   const [esMovil, setEsMovil] = useState(() => window.matchMedia('(max-width: 860px)').matches);
@@ -47,6 +50,17 @@ export default function Empresas() {
       if (porEmpresa !== 0) return porEmpresa;
       return a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' });
     });
+  const totalPaginasSucursal = Math.max(1, Math.ceil(sucursalesFiltradas.length / POR_PAGINA_SUCURSALES));
+  const paginaSucursalActual = Math.min(paginaSucursal, totalPaginasSucursal);
+  const sucursalesPagina = sucursalesFiltradas.slice(
+    (paginaSucursalActual - 1) * POR_PAGINA_SUCURSALES,
+    paginaSucursalActual * POR_PAGINA_SUCURSALES
+  );
+
+  function onBuscarSucursal(valor) {
+    setBusquedaSucursal(valor);
+    setPaginaSucursal(1);
+  }
 
   function crearEmpresa(e) {
     e.preventDefault();
@@ -232,13 +246,13 @@ export default function Empresas() {
           <label>Buscar por nombre, CAD o empresa</label>
           <input
             value={busquedaSucursal}
-            onChange={(e) => setBusquedaSucursal(e.target.value)}
+            onChange={(e) => onBuscarSucursal(e.target.value)}
             placeholder="Ej. Campero, 645, Barberena..."
           />
         </div>
         {esMovil ? (
           <div className="mobile-empresa-list">
-            {sucursalesFiltradas.map((s) => (
+            {sucursalesPagina.map((s) => (
               <div key={s.id} className="mobile-empresa-card">
                 <div className="mobile-empresa-top">
                   <div>
@@ -272,7 +286,7 @@ export default function Empresas() {
           <table>
             <thead><tr><th>CAD</th><th>Sucursal</th><th>Empresa</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
-              {sucursalesFiltradas.map((s) => (
+              {sucursalesPagina.map((s) => (
                 <tr key={s.id}>
                   <td>{s.codigoCad}</td><td>{s.nombre}</td><td>{s.empresaNombre}</td>
                   <td><span className={`status-pill ${s.estado === 'A' ? 'ok' : 'warn'}`}>{s.estado === 'A' ? 'Activa' : 'Inactiva'}</span></td>
@@ -293,6 +307,17 @@ export default function Empresas() {
               ))}
             </tbody>
           </table>
+        )}
+        {sucursalesFiltradas.length > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
+            <span style={{ fontSize: 12, color: 'var(--text-3)' }}>
+              Página {paginaSucursalActual} de {totalPaginasSucursal} · {sucursalesFiltradas.length} CAD
+            </span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button className="btn btn-ghost" disabled={paginaSucursalActual <= 1} onClick={() => setPaginaSucursal(paginaSucursalActual - 1)}>Anterior</button>
+              <button className="btn btn-ghost" disabled={paginaSucursalActual >= totalPaginasSucursal} onClick={() => setPaginaSucursal(paginaSucursalActual + 1)}>Siguiente</button>
+            </div>
+          </div>
         )}
       </div>
 

@@ -54,13 +54,17 @@ export default function Usuarios() {
     return () => media.removeEventListener('change', onChange);
   }, []);
 
-  const usuariosFiltrados = (usuarios ?? []).filter((u) => {
-    if (filtroEstado === 'A' && u.estado === 'BLOQUEADO') return false;
-    if (filtroEstado === 'BLOQUEADO' && u.estado !== 'BLOQUEADO') return false;
-    const q = busqueda.trim().toLowerCase();
-    if (!q) return true;
-    return u.usuario?.toLowerCase().includes(q) || u.nombre?.toLowerCase().includes(q) || u.correo?.toLowerCase().includes(q);
-  });
+  const usuariosFiltrados = (usuarios ?? [])
+    .filter((u) => {
+      if (filtroEstado === 'A' && u.estado === 'BLOQUEADO') return false;
+      if (filtroEstado === 'BLOQUEADO' && u.estado !== 'BLOQUEADO') return false;
+      const q = busqueda.trim().toLowerCase();
+      if (!q) return true;
+      return u.usuario?.toLowerCase().includes(q) || u.nombre?.toLowerCase().includes(q) || u.correo?.toLowerCase().includes(q);
+    })
+    // Activos primero siempre — los bloqueados quedan al final de la
+    // lista (y de la paginación) en vez de mezclados sin orden.
+    .sort((a, b) => (a.estado === 'BLOQUEADO') - (b.estado === 'BLOQUEADO'));
   const totalPaginas = Math.max(1, Math.ceil(usuariosFiltrados.length / POR_PAGINA));
   const paginaActual = Math.min(pagina, totalPaginas);
   const usuariosPagina = usuariosFiltrados.slice((paginaActual - 1) * POR_PAGINA, paginaActual * POR_PAGINA);
