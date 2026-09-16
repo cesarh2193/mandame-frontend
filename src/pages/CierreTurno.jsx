@@ -80,11 +80,13 @@ export default function CierreTurno() {
                       ? `Turno de ${m.nombre} cerrado y autorizado.`
                       : `Turno de ${m.nombre} cerrado. Queda pendiente de autorización.`
                   );
-                }
+                },
+                onError: (err) => mostrarToast(err?.response?.data?.error || 'No se pudo guardar el cierre de turno.', 'error')
               }
             )
           }
           guardando={cerrarTurno.isPending}
+          mostrarToast={mostrarToast}
         />
       ))}
 
@@ -128,20 +130,34 @@ export default function CierreTurno() {
   );
 }
 
-function TarjetaCierre({ motorista, tarifas, abierto, onToggle, onGuardar, guardando }) {
+// Tarifa por defecto para un motorista: la tarifa activa cuyo tipo
+// coincide con su tipo de contrato (Fijo/Turno), sin contar las
+// variantes de "ASUETO" (esas se eligen a mano solo cuando aplica) ni
+// las de tipo MIXTO (ej. "Hora extra", que no es una tarifa por día).
+// Es solo una sugerencia para agilizar: el campo se puede cambiar
+// libremente, no se restringe ninguna opción.
+function tarifaPorDefecto(tarifas, tipoMotorista) {
+  if (!tipoMotorista) return null;
+  return tarifas.find((t) => t.tipo === tipoMotorista && !t.descripcion?.toUpperCase().includes('ASUETO')) ?? null;
+}
+
+function TarjetaCierre({ motorista, tarifas, abierto, onToggle, onGuardar, guardando, mostrarToast }) {
   const [cantidad, setCantidad] = useState(0);
-  const [tarifaId, setTarifaId] = useState(tarifas[0]?.id ?? '');
+  const [tarifaId, setTarifaId] = useState(tarifaPorDefecto(tarifas, motorista.tipoMotorista)?.id ?? tarifas[0]?.id ?? '');
 
   // Esta tarjeta se monta apenas carga la lista "en turno", que puede
   // resolver antes que useTarifas() — si eso pasa, el useState de
   // arriba queda fijo en '' para siempre (el inicializador solo corre
   // una vez), aunque las tarifas ya hayan llegado. Este efecto lo
   // corrige apenas hay tarifas disponibles y todavía no se eligió
-  // ninguna — así el <select> no queda "viéndose" seleccionado con la
-  // primera opción mientras por dentro el valor real sigue vacío.
+  // ninguna — eligiendo la tarifa según el tipo de motorista (Fijo/Turno)
+  // cuando se puede, para no dejar el <select> "viéndose" seleccionado
+  // con la primera opción mientras por dentro el valor real sigue vacío.
   useEffect(() => {
-    if (!tarifaId && tarifas.length > 0) setTarifaId(tarifas[0].id);
-  }, [tarifas, tarifaId]);
+    if (!tarifaId && tarifas.length > 0) {
+      setTarifaId(tarifaPorDefecto(tarifas, motorista.tipoMotorista)?.id ?? tarifas[0].id);
+    }
+  }, [tarifas, tarifaId, motorista.tipoMotorista]);
 
   const ahora = new Date();
   const hoy = aInputLocal(ahora).slice(0, 10);
@@ -150,6 +166,10 @@ function TarjetaCierre({ motorista, tarifas, abierto, onToggle, onGuardar, guard
 
   function submit(e) {
     e.preventDefault();
+    if (!(Number(cantidad) > 0)) {
+      mostrarToast('La cantidad de repartos tiene que ser mayor a 0 para guardar el cierre.', 'error');
+      return;
+    }
     onGuardar({
       cantidadEntregas: Number(cantidad),
       tarifaId: Number(tarifaId),
@@ -183,7 +203,7 @@ function TarjetaCierre({ motorista, tarifas, abierto, onToggle, onGuardar, guard
             </div>
             <div className="field">
               <label>Cantidad de repartos</label>
-              <input type="number" min="0" value={cantidad} onChange={(e) => setCantidad(e.target.value)} required />
+              <input type="number" min="1" value={cantidad} onChange={(e) => setCantidad(e.target.value)} required />
             </div>
             <div className="field">
               <label>Tarifa aplicable</label>
