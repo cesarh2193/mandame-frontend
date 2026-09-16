@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Modal from '../../components/Modal';
 import { useEmpresas, useEmpresasMutation, useSucursales, useSucursalesMutation, usePersonal } from '../../api/hooks';
 import { useToast } from '../../context/ToastContext';
@@ -16,6 +16,16 @@ export default function Empresas() {
   const [busquedaSucursal, setBusquedaSucursal] = useState('');
   const [sucursalForm, setSucursalForm] = useState({ empresaId: '', codigoCad: '', nombre: '', supervisorId: '' });
   const { data: personal } = usePersonal();
+  const [esMovil, setEsMovil] = useState(() => window.matchMedia('(max-width: 860px)').matches);
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 860px)');
+    const onChange = () => setEsMovil(media.matches);
+    onChange();
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
+
   const empresasActivas = (empresas ?? []).filter((e) => e.estado === 'A');
   const supervisores = (personal ?? []).filter((p) => p.puesto === 'Supervisor' && p.estado === 'A');
 
@@ -107,15 +117,16 @@ export default function Empresas() {
           <button className="btn btn-primary" style={{ alignSelf: 'end' }}>Insertar empresa</button>
         </form>
 
-        <table style={{ marginTop: 14 }}>
-          <thead><tr><th>Código</th><th>Empresa</th><th>Supervisor</th><th>Estado</th><th>Acciones</th></tr></thead>
-          <tbody>
+        {esMovil ? (
+          <div className="mobile-empresa-list" style={{ marginTop: 14 }}>
             {empresas?.map((e) => (
-              <tr key={e.id}>
-                <td>{e.codigo}</td><td>{e.nombre}</td><td>{e.supervisor ?? '—'}</td>
-                <td><span className={`status-pill ${e.estado === 'A' ? 'ok' : 'warn'}`}>{e.estado === 'A' ? 'Activa' : 'Inactiva'}</span></td>
-                <td>
-                  <div style={{ display: 'flex', gap: 6 }}>
+              <div key={e.id} className="mobile-empresa-card">
+                <div className="mobile-empresa-top">
+                  <div>
+                    <div className="mobile-empresa-nombre">{e.nombre}</div>
+                    <div className="mobile-empresa-codigo">Código {e.codigo}</div>
+                  </div>
+                  <div className="mobile-empresa-actions">
                     <button className="btn btn-ghost" onClick={() => setEditando({ tipo: 'empresa', data: { ...e } })}>Editar</button>
                     <button
                       type="button"
@@ -126,11 +137,44 @@ export default function Empresas() {
                       {e.estado === 'A' ? <IconoBasura /> : <IconoCheck />}
                     </button>
                   </div>
-                </td>
-              </tr>
+                </div>
+                <div className="mobile-empresa-meta">
+                  <span className="mobile-empresa-label">Supervisor</span>
+                  <span className="mobile-empresa-value">{e.supervisor ?? '—'}</span>
+                </div>
+                <div className="mobile-empresa-meta">
+                  <span className="mobile-empresa-label">Estado</span>
+                  <span className={`status-pill ${e.estado === 'A' ? 'ok' : 'warn'}`}>{e.estado === 'A' ? 'Activa' : 'Inactiva'}</span>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        ) : (
+          <table style={{ marginTop: 14 }}>
+            <thead><tr><th>Código</th><th>Empresa</th><th>Supervisor</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody>
+              {empresas?.map((e) => (
+                <tr key={e.id}>
+                  <td>{e.codigo}</td><td>{e.nombre}</td><td>{e.supervisor ?? '—'}</td>
+                  <td><span className={`status-pill ${e.estado === 'A' ? 'ok' : 'warn'}`}>{e.estado === 'A' ? 'Activa' : 'Inactiva'}</span></td>
+                  <td>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button className="btn btn-ghost" onClick={() => setEditando({ tipo: 'empresa', data: { ...e } })}>Editar</button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost icon-btn"
+                        title={e.estado === 'A' ? 'Dar de baja' : 'Reactivar'}
+                        onClick={() => toggleEstadoEmpresa(e)}
+                      >
+                        {e.estado === 'A' ? <IconoBasura /> : <IconoCheck />}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       <div className="card">
@@ -192,15 +236,16 @@ export default function Empresas() {
             placeholder="Ej. Campero, 645, Barberena..."
           />
         </div>
-        <table>
-          <thead><tr><th>CAD</th><th>Sucursal</th><th>Empresa</th><th>Estado</th><th>Acciones</th></tr></thead>
-          <tbody>
+        {esMovil ? (
+          <div className="mobile-empresa-list">
             {sucursalesFiltradas.map((s) => (
-              <tr key={s.id}>
-                <td>{s.codigoCad}</td><td>{s.nombre}</td><td>{s.empresaNombre}</td>
-                <td><span className={`status-pill ${s.estado === 'A' ? 'ok' : 'warn'}`}>{s.estado === 'A' ? 'Activa' : 'Inactiva'}</span></td>
-                <td>
-                  <div style={{ display: 'flex', gap: 6 }}>
+              <div key={s.id} className="mobile-empresa-card">
+                <div className="mobile-empresa-top">
+                  <div>
+                    <div className="mobile-empresa-nombre">{s.nombre}</div>
+                    <div className="mobile-empresa-codigo">CAD {s.codigoCad}</div>
+                  </div>
+                  <div className="mobile-empresa-actions">
                     <button className="btn btn-ghost" onClick={() => setEditando({ tipo: 'sucursal', data: { ...s } })}>Editar</button>
                     <button
                       type="button"
@@ -211,11 +256,44 @@ export default function Empresas() {
                       {s.estado === 'A' ? <IconoBasura /> : <IconoCheck />}
                     </button>
                   </div>
-                </td>
-              </tr>
+                </div>
+                <div className="mobile-empresa-meta">
+                  <span className="mobile-empresa-label">Empresa</span>
+                  <span className="mobile-empresa-value">{s.empresaNombre}</span>
+                </div>
+                <div className="mobile-empresa-meta">
+                  <span className="mobile-empresa-label">Estado</span>
+                  <span className={`status-pill ${s.estado === 'A' ? 'ok' : 'warn'}`}>{s.estado === 'A' ? 'Activa' : 'Inactiva'}</span>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        ) : (
+          <table>
+            <thead><tr><th>CAD</th><th>Sucursal</th><th>Empresa</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody>
+              {sucursalesFiltradas.map((s) => (
+                <tr key={s.id}>
+                  <td>{s.codigoCad}</td><td>{s.nombre}</td><td>{s.empresaNombre}</td>
+                  <td><span className={`status-pill ${s.estado === 'A' ? 'ok' : 'warn'}`}>{s.estado === 'A' ? 'Activa' : 'Inactiva'}</span></td>
+                  <td>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button className="btn btn-ghost" onClick={() => setEditando({ tipo: 'sucursal', data: { ...s } })}>Editar</button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost icon-btn"
+                        title={s.estado === 'A' ? 'Dar de baja' : 'Reactivar'}
+                        onClick={() => toggleEstadoSucursal(s)}
+                      >
+                        {s.estado === 'A' ? <IconoBasura /> : <IconoCheck />}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       <Modal
