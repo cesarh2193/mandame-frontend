@@ -30,6 +30,9 @@ const SECCIONES = [
     { to: '/catalogos/tarifas', label: 'Tarifas', roles: ['Admin', 'Gerente'] },
     { to: '/catalogos/personal', label: 'Personal', rolesExcluidos: ['Motorista'] },
     { to: '/catalogos/usuarios', label: 'Usuarios y permisos', roles: ['Admin'] }
+  ]},
+  { titulo: 'Soporte', items: [
+    { to: '/ayuda', label: 'Ayuda' }
   ]}
 ];
 

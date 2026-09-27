@@ -254,3 +254,16 @@ td{padding:9px 8px;border-bottom:1px solid var(--line);}
      "grande" hasta que la ajusta a mano. */
   .field input, .field select, .field textarea { font-size: 16px; }
 }
+
+/* ---------- Impresión (ej. Ayuda > Descargar en PDF) ---------- */
+/* Oculta el chrome de la app (topbar, menú, barra inferior) y deja
+   que solo el contenido de la página imprima, a lo ancho completo.
+   .no-imprimir tapa además cualquier botón/acción que no tenga
+   sentido en un PDF (ej. el botón "Descargar en PDF" mismo). */
+@media print{
+  .topbar, .sidebar, .sidebar-backdrop, .bottom-nav, .no-imprimir{display:none !important;}
+  .body-shell{display:block;}
+  .main{max-width:100%;padding:0;}
+  body{background:#fff;}
+  .card{box-shadow:none;break-inside:avoid;}
+}

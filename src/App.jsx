@@ -25,6 +25,7 @@ import Empresas from './pages/catalogos/Empresas';
 import Tarifas from './pages/catalogos/Tarifas';
 import Personal from './pages/catalogos/Personal';
 import Usuarios from './pages/catalogos/Usuarios';
+import Ayuda from './pages/Ayuda';
 
 function InicioRedirect() {
   const { usuario } = useAuth();
@@ -196,6 +197,14 @@ export default function App() {
               element={
                 <ProtectedRoute roles={['Admin']}>
                   <Usuarios />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/ayuda"
+              element={
+                <ProtectedRoute>
+                  <Ayuda />
                 </ProtectedRoute>
               }
             />
