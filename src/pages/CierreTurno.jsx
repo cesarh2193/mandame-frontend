@@ -206,7 +206,10 @@ function TarjetaCierre({ motorista, tarifas, abierto, onToggle, onGuardar, guard
 
   const ahora = new Date();
   const hoy = aInputLocal(ahora).slice(0, 10);
-  const [horaIngreso, setHoraIngreso] = useState(`${hoy}T${motorista.horaIngreso || '00:00'}`);
+  // El valor con el que arranca el campo, para poder distinguir si el
+  // usuario lo tocó o no (ver comentario en submit()).
+  const horaIngresoOriginal = `${hoy}T${motorista.horaIngreso || '00:00'}`;
+  const [horaIngreso, setHoraIngreso] = useState(horaIngresoOriginal);
   const [horaSalida, setHoraSalida] = useState(aInputLocal(ahora));
 
   function submit(e) {
@@ -218,7 +221,11 @@ function TarjetaCierre({ motorista, tarifas, abierto, onToggle, onGuardar, guard
     onGuardar({
       cantidadEntregas: Number(cantidad),
       tarifaId: Number(tarifaId),
-      horaIngreso: `${horaIngreso.replace('T', ' ')}:00`,
+      // Solo se manda si el usuario de verdad lo cambió: el backend
+      // intenta "corregir" el ingreso contra la marca de HOY, así que
+      // mandarlo sin tocar rompe el cierre de un turno que quedó
+      // abierto de un día para otro (el ingreso real ya no es de hoy).
+      horaIngreso: horaIngreso !== horaIngresoOriginal ? `${horaIngreso.replace('T', ' ')}:00` : undefined,
       horaSalida: `${horaSalida.replace('T', ' ')}:00`
     });
   }
