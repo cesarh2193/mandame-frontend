@@ -1,4 +1,12 @@
+import { useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import logoMandame from '../assets/logo-mandame.png';
+
+const TITULOS_MANUAL = {
+  admin: 'Guía del Administrador',
+  operador: 'Guía del Operador',
+  motorista: 'Guía del Motorista'
+};
 
 // Chips reutilizables para nombrar botones/campos exactos de la
 // interfaz dentro del texto del manual, con los mismos colores que ya
@@ -70,9 +78,49 @@ function tipoManual(roles) {
   return 'operador';
 }
 
+function Portada({ tipo }) {
+  return (
+    <div style={{
+      background: 'var(--navy)', color: '#fff', borderRadius: 12, padding: '22px 24px',
+      display: 'flex', alignItems: 'center', gap: 18, marginBottom: 18
+    }}>
+      <img src={logoMandame} alt="Mandame Guatemala" style={{ width: 64, height: 64, objectFit: 'contain', background: '#fff', borderRadius: 10, padding: 6, flexShrink: 0 }} />
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#9FD9CB', marginBottom: 4 }}>
+          Manual de usuario
+        </div>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>{TITULOS_MANUAL[tipo]}</h1>
+        <p style={{ margin: '4px 0 0', fontSize: 12.5, color: '#C3CBDC' }}>Dirigido a: {tipo === 'admin' ? 'Administrador' : tipo === 'operador' ? 'Supervisor, Gerente y Digitador' : 'Motorista'}</p>
+      </div>
+    </div>
+  );
+}
+
 export default function Ayuda() {
   const { usuario } = useAuth();
   const tipo = tipoManual(usuario?.roles ?? []);
+  const contenidoRef = useRef(null);
+  const [generando, setGenerando] = useState(false);
+
+  async function descargarPDF() {
+    setGenerando(true);
+    try {
+      const { default: html2pdf } = await import('html2pdf.js');
+      await html2pdf()
+        .set({
+          margin: 10,
+          filename: `manual-${tipo}-mandame.pdf`,
+          image: { type: 'jpeg', quality: 0.95 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
+          pagebreak: { mode: ['css', 'avoid-all'] }
+        })
+        .from(contenidoRef.current)
+        .save();
+    } finally {
+      setGenerando(false);
+    }
+  }
 
   return (
     <div>
@@ -81,12 +129,17 @@ export default function Ayuda() {
           <h1 className="page-title">Ayuda</h1>
           <p className="page-sub">Manual de uso del sistema, según tu rol.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => window.print()}>Descargar en PDF</button>
+        <button className="btn btn-primary" onClick={descargarPDF} disabled={generando}>
+          {generando ? 'Generando PDF...' : 'Descargar en PDF'}
+        </button>
       </div>
 
+      <div ref={contenidoRef}>
+      <Portada tipo={tipo} />
       {tipo === 'admin' && <ManualAdmin />}
       {tipo === 'operador' && <ManualOperador />}
       {tipo === 'motorista' && <ManualMotorista />}
+      </div>
     </div>
   );
 }
@@ -94,9 +147,6 @@ export default function Ayuda() {
 function ManualAdmin() {
   return (
     <div>
-      <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 2 }}>Guía del Administrador</h2>
-      <p className="page-sub">Acceso completo: todos los CAD, todos los reportes y los catálogos de configuración.</p>
-
       <Seccion numero={1} titulo="Iniciar sesión">
         <p>Escribí tu <Campo>Usuario</Campo> y <Campo>Contraseña</Campo> y presioná <Boton>Iniciar sesión</Boton>. Como Administrador tenés acceso automático a todos los CAD, sin que nadie te los asigne uno por uno.</p>
       </Seccion>
@@ -170,8 +220,6 @@ function ManualAdmin() {
 function ManualOperador() {
   return (
     <div>
-      <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 2 }}>Guía del Operador</h2>
-      <p className="page-sub">Para Supervisores, Gerentes y Digitadores: el ciclo diario completo de un CAD.</p>
 
       <Seccion numero={1} titulo="Iniciar sesión">
         <p>Solo vas a ver los CAD que el Administrador te haya asignado. Si son varios, cambiá entre ellos con el selector <Campo>CAD (sucursal)</Campo> en cada pantalla.</p>
@@ -225,8 +273,6 @@ function ManualOperador() {
 function ManualMotorista() {
   return (
     <div>
-      <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 2 }}>Guía del Motorista</h2>
-      <p className="page-sub">Todo lo que necesitás saber para subir tu boleta del día.</p>
 
       <Seccion numero={1} titulo="Iniciar sesión">
         <p>Entrá con el <Campo>Usuario</Campo> y <Campo>Contraseña</Campo> que te dio tu Supervisor. El sistema te lleva directo a tu única pantalla, "Boletas cierre" — no vas a ver otros menús, así es a propósito.</p>
