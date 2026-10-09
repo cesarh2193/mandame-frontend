@@ -198,7 +198,7 @@ export default function SubirBoleta() {
             <div>
               <strong style={{ fontSize: 13.5 }}>Link para compartir por WhatsApp</strong>
               <p className="page-sub" style={{ margin: '2px 0 0' }}>
-                Un motorista puede subir su propia boleta de hoy sin necesitar cuenta, entrando con este link. Vence a las 48 horas.
+                Un motorista puede subir su propia boleta de hoy sin necesitar cuenta, entrando con este link. Vence a las 12 horas.
               </p>
             </div>
             <button className="btn btn-ghost" onClick={generarLink} disabled={generandoLink || !sucursalId}>

@@ -249,7 +249,7 @@ function ManualOperador() {
       </Seccion>
 
       <Seccion numero={6} titulo="Boletas">
-        <p>En Informes → <strong>Subir boleta</strong>: elegí <Campo>Fecha</Campo> y <Campo>CAD</Campo> y subí la foto de cada motorista (acepta fotos de iPhone). Si no tiene cuenta, usá <Boton color="amber-dark">Generar link para compartir hoy</Boton> y mandaselo por WhatsApp (vence a las 48 horas).</p>
+        <p>En Informes → <strong>Subir boleta</strong>: elegí <Campo>Fecha</Campo> y <Campo>CAD</Campo> y subí la foto de cada motorista (acepta fotos de iPhone). Si no tiene cuenta, usá <Boton color="amber-dark">Generar link para compartir hoy</Boton> y mandaselo por WhatsApp (vence a las 12 horas).</p>
         <p>En <strong>Revisión de boletas</strong> vas a ver el estado de todos los motoristas de un rango de fechas.</p>
       </Seccion>
 
@@ -285,7 +285,7 @@ function ManualMotorista() {
       </Seccion>
 
       <Seccion numero={3} titulo="Si te mandan un link por WhatsApp">
-        <p>Si todavía no tenés usuario, tu Supervisor te puede mandar un link para subir tu boleta de hoy sin necesitar cuenta. Solo funciona el mismo día y vence a las 48 horas.</p>
+        <p>Si todavía no tenés usuario, tu Supervisor te puede mandar un link para subir tu boleta de hoy sin necesitar cuenta. Solo funciona el mismo día y vence a las 12 horas.</p>
       </Seccion>
 
       <Seccion numero={4} titulo="Estados de tu boleta">
