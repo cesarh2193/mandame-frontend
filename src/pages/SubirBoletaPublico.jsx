@@ -47,6 +47,7 @@ export default function SubirBoletaPublico() {
   const [motoristas, setMotoristas] = useState([]);
   const [busqueda, setBusqueda] = useState('');
   const [seleccionado, setSeleccionado] = useState(null);
+  const [confirmado, setConfirmado] = useState(false);
   const [subiendo, setSubiendo] = useState(false);
   const [errorSubida, setErrorSubida] = useState('');
   const [listo, setListo] = useState(false);
@@ -73,12 +74,14 @@ export default function SubirBoletaPublico() {
 
   function elegirMotorista(m) {
     setSeleccionado(m);
+    setConfirmado(false);
     setErrorSubida('');
     setListo(false);
   }
 
   function volverALista() {
     setSeleccionado(null);
+    setConfirmado(false);
     setBusqueda('');
     setErrorSubida('');
     setListo(false);
@@ -149,10 +152,13 @@ export default function SubirBoletaPublico() {
                       key={m.motoristaId}
                       type="button"
                       className="btn btn-ghost"
-                      style={{ textAlign: 'left' }}
+                      style={{ textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}
                       onClick={() => elegirMotorista(m)}
                     >
-                      {m.nombre}
+                      <span>{m.nombre}</span>
+                      {m.estado === 'CARGADA' && (
+                        <span className="status-pill ok" style={{ flexShrink: 0 }}>Ya subida</span>
+                      )}
                     </button>
                   ))}
                   {motoristasFiltrados.length === 0 && (
@@ -166,7 +172,31 @@ export default function SubirBoletaPublico() {
           </>
         )}
 
-        {!cargando && !error && seleccionado && !listo && (
+        {!cargando && !error && seleccionado && !confirmado && !listo && (
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 4 }}>Usted ha seleccionado a:</p>
+            <p style={{ fontSize: 17, fontWeight: 800, marginBottom: 14 }}>{seleccionado.nombre}</p>
+            {seleccionado.estado === 'CARGADA' && (
+              <p style={{ fontSize: 12.5, color: 'var(--amber-dark)', background: 'var(--amber-light)', padding: '8px 12px', borderRadius: 8, marginBottom: 14 }}>
+                Ya habías subido tu boleta de hoy. Si seguís, la nueva va a reemplazar a la anterior.
+              </p>
+            )}
+            <p style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 16 }}>¿Está seguro? Si es usted, presione Seguir.</p>
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ width: '100%', marginBottom: 8 }}
+              onClick={() => setConfirmado(true)}
+            >
+              Seguir
+            </button>
+            <button type="button" className="btn btn-ghost" style={{ width: '100%' }} onClick={volverALista}>
+              Retroceder
+            </button>
+          </div>
+        )}
+
+        {!cargando && !error && seleccionado && confirmado && !listo && (
           <div style={{ textAlign: 'center' }}>
             <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{seleccionado.nombre}</p>
             <p style={{ fontSize: 12.5, color: 'var(--text-2)', marginBottom: 16 }}>
