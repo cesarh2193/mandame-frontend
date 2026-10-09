@@ -142,12 +142,13 @@ export default function SubirBoleta() {
   }
 
   const totalCargadas = motoristas?.filter((m) => m.estado === 'CARGADA').length ?? 0;
-  const esAdmin = (usuario?.roles ?? []).includes('Admin');
+  const puedeCorregirFechaPasada = (usuario?.roles ?? []).some((r) => ['Admin', 'Supervisor'].includes(r));
   // Por seguridad, subir o reemplazar una boleta solo se permite el
-  // mismo día — salvo Administrador, que sí puede corregir boletas de
-  // otra fecha. El backend también lo valida, esto es solo para no
-  // dejar que el resto de roles ni siquiera intente con una fecha pasada.
-  const puedeSubir = fecha === hoy || esAdmin;
+  // mismo día — salvo Administrador o Supervisor, que sí pueden
+  // corregir boletas de otra fecha. El backend también lo valida, esto
+  // es solo para no dejar que el resto de roles ni siquiera intente
+  // con una fecha pasada.
+  const puedeSubir = fecha === hoy || puedeCorregirFechaPasada;
 
   return (
     <div>
