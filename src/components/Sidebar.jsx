@@ -23,7 +23,8 @@ const SECCIONES = [
     { to: '/informes/asistencia', label: 'Informe de asistencia', rolesExcluidos: ['Motorista'] },
     { to: '/informes/asistencia-general', label: 'Asistencia general', rolesExcluidos: ['Motorista'] },
     { to: '/informes/ficha-personal', label: 'Ficha de personal', rolesExcluidos: ['Motorista'] },
-    { to: '/informes/semanal', label: 'Informe semanal', roles: ['Admin'] }
+    { to: '/informes/semanal', label: 'Informe semanal', roles: ['Admin'] },
+    { to: '/informes/documentos-motoristas', label: 'Documentos motoristas', rolesExcluidos: ['Motorista'] }
   ]},
   { titulo: 'Administración', items: [
     { to: '/catalogos/empresas', label: 'Empresas y sucursales', roles: ['Admin', 'Gerente'] },
