@@ -37,7 +37,7 @@ export default function Usuarios() {
   const mut = useUsuariosMutation();
   const mostrarToast = useToast();
 
-  const [form, setForm] = useState({ personaId: '', usuario: '', correo: '', password: '', roles: [], sucursalIds: [], recibirNotificacionesCierre: true });
+  const [form, setForm] = useState({ personaId: '', usuario: '', correo: '', password: '', roles: [], sucursalIds: [], recibirNotificacionesCierre: false });
   const [editando, setEditando] = useState(null);
   const [viendo, setViendo] = useState(null);
 
@@ -113,7 +113,7 @@ export default function Usuarios() {
     e.preventDefault();
     mut.crear.mutate(form, {
       onSuccess: () => {
-        setForm({ personaId: '', usuario: '', correo: '', password: '', roles: [], sucursalIds: [], recibirNotificacionesCierre: true });
+        setForm({ personaId: '', usuario: '', correo: '', password: '', roles: [], sucursalIds: [], recibirNotificacionesCierre: false });
         mostrarToast('Usuario creado correctamente.');
       }
     });
