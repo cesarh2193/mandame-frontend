@@ -37,7 +37,7 @@ export default function Usuarios() {
   const mut = useUsuariosMutation();
   const mostrarToast = useToast();
 
-  const [form, setForm] = useState({ personaId: '', usuario: '', correo: '', password: '', roles: [], sucursalIds: [] });
+  const [form, setForm] = useState({ personaId: '', usuario: '', correo: '', password: '', roles: [], sucursalIds: [], recibirNotificacionesCierre: true });
   const [editando, setEditando] = useState(null);
   const [viendo, setViendo] = useState(null);
 
@@ -113,7 +113,7 @@ export default function Usuarios() {
     e.preventDefault();
     mut.crear.mutate(form, {
       onSuccess: () => {
-        setForm({ personaId: '', usuario: '', correo: '', password: '', roles: [], sucursalIds: [] });
+        setForm({ personaId: '', usuario: '', correo: '', password: '', roles: [], sucursalIds: [], recibirNotificacionesCierre: true });
         mostrarToast('Usuario creado correctamente.');
       }
     });
@@ -175,6 +175,14 @@ export default function Usuarios() {
         <p style={{ fontSize: 12, color: 'var(--text-3)' }}>
           Si el rol es Gerente, a este correo le llega el resumen automático al autorizar cierres.
         </p>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, marginBottom: 14 }}>
+          <input
+            type="checkbox"
+            checked={form.recibirNotificacionesCierre}
+            onChange={(e) => setForm({ ...form, recibirNotificacionesCierre: e.target.checked })}
+          />
+          Recibir correo automático de resumen de cierre
+        </label>
         <div className="field" style={{ marginBottom: 12 }}>
           <label>Roles</label>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -358,6 +366,10 @@ export default function Usuarios() {
               <label>CAD asignados</label>
               <input value={viendo.sucursales?.length ? viendo.sucursales.map((s) => s.nombre).join(', ') : '—'} disabled />
             </div>
+            <div className="field">
+              <label>Correo de resumen de cierre</label>
+              <input value={viendo.recibirNotificacionesCierre ? 'Sí lo recibe' : 'No lo recibe'} disabled />
+            </div>
           </>
         )}
       </Modal>
@@ -378,6 +390,14 @@ export default function Usuarios() {
               <label>Correo electrónico</label>
               <input type="email" value={editando.correo} onChange={(e) => setEditando({ ...editando, correo: e.target.value })} />
             </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, marginBottom: 14 }}>
+              <input
+                type="checkbox"
+                checked={editando.recibirNotificacionesCierre}
+                onChange={(e) => setEditando({ ...editando, recibirNotificacionesCierre: e.target.checked })}
+              />
+              Recibir correo automático de resumen de cierre
+            </label>
             <div className="field" style={{ marginBottom: 12 }}>
               <label>Roles</label>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
