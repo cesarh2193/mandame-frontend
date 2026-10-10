@@ -15,6 +15,7 @@ export default function DocumentosMotoristas() {
   const [sucursalId, setSucursalId] = useState('');
   const [buscando, setBuscando] = useState(false);
   const [generandoExcel, setGenerandoExcel] = useState(false);
+  const [generandoPDF, setGenerandoPDF] = useState(false);
   const [filas, setFilas] = useState(null);
   const [expandido, setExpandido] = useState(null);
 
@@ -30,6 +31,26 @@ export default function DocumentosMotoristas() {
       mostrarToast(err?.response?.data?.error || 'No se pudo consultar el informe.', 'error');
     } finally {
       setBuscando(false);
+    }
+  }
+
+  async function exportarPDF() {
+    setGenerandoPDF(true);
+    try {
+      const res = await api.get('/informes/documentos-motoristas', {
+        params: { sucursalId: sucursalId || undefined },
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'documentos-motoristas.pdf';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      mostrarToast(err?.response?.data?.error || 'No se pudo generar el PDF.', 'error');
+    } finally {
+      setGenerandoPDF(false);
     }
   }
 
@@ -81,7 +102,10 @@ export default function DocumentosMotoristas() {
           <button className="btn btn-submodal" onClick={buscar} disabled={buscando}>
             {buscando ? 'Buscando...' : 'Buscar'}
           </button>
-          <button className="btn btn-primary" onClick={exportarExcel} disabled={generandoExcel}>
+          <button className="btn btn-primary" onClick={exportarPDF} disabled={generandoPDF}>
+            {generandoPDF ? 'Generando...' : 'Exportar PDF'}
+          </button>
+          <button className="btn btn-ghost" onClick={exportarExcel} disabled={generandoExcel}>
             {generandoExcel ? 'Generando...' : 'Exportar Excel'}
           </button>
         </div>
