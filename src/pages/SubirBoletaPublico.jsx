@@ -38,9 +38,38 @@ async function enderezarSiEsHorizontal(archivo) {
 // Sidebar, es standalone como Login.jsx. El token trae el CAD y la
 // fecha; acá nunca se le pide elegir ninguno de los dos. Se identifica
 // solo buscando y tocando su nombre en la lista, sin ningún código.
+const CLAVE_TOKEN_GUARDADO = 'mandame_boleta_token';
+
+// Algunos navegadores embebidos (ej. el de Facebook/Messenger) matan y
+// recargan la página al volver de la cámara del teléfono, perdiendo el
+// ?token= de la URL aunque la pantalla se vea igual. Por eso se guarda
+// una copia aparte apenas se detecta uno válido en la URL, y si en
+// algún momento la URL ya no lo trae, se recupera de ahí — así no se
+// pierde a mitad de la subida de la foto.
+function leerTokenGuardado() {
+  try {
+    return sessionStorage.getItem(CLAVE_TOKEN_GUARDADO) || '';
+  } catch {
+    return '';
+  }
+}
+function guardarToken(valor) {
+  try {
+    sessionStorage.setItem(CLAVE_TOKEN_GUARDADO, valor);
+  } catch {
+    // Navegación privada o storage bloqueado: sin esto el token solo
+    // vive en la URL, igual que antes — no es un error que deba frenar nada.
+  }
+}
+
 export default function SubirBoletaPublico() {
   const [params] = useSearchParams();
-  const token = params.get('token') || '';
+  const tokenDeUrl = params.get('token') || '';
+  const token = tokenDeUrl || leerTokenGuardado();
+
+  useEffect(() => {
+    if (tokenDeUrl) guardarToken(tokenDeUrl);
+  }, [tokenDeUrl]);
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
