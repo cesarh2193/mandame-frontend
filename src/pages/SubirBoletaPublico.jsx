@@ -40,22 +40,35 @@ async function enderezarSiEsHorizontal(archivo) {
 // solo buscando y tocando su nombre en la lista, sin ningún código.
 const CLAVE_TOKEN_GUARDADO = 'mandame_boleta_token';
 
-// Algunos navegadores embebidos (ej. el de Facebook/Messenger) matan y
-// recargan la página al volver de la cámara del teléfono, perdiendo el
-// ?token= de la URL aunque la pantalla se vea igual. Por eso se guarda
-// una copia aparte apenas se detecta uno válido en la URL, y si en
-// algún momento la URL ya no lo trae, se recupera de ahí — así no se
-// pierde a mitad de la subida de la foto.
+// Al volver de la cámara del teléfono (al tocar "Tomar foto"), el
+// sistema operativo puede matar por completo el proceso del navegador
+// por falta de memoria — no es solo recargar la pestaña, es un
+// reinicio real — y lo que "vuelve" ya no tiene ni la URL completa ni
+// el estado de React de antes. sessionStorage no alcanza para esto
+// (depende de que sobreviva la pestaña/sesión); localStorage sí,
+// porque queda guardado en el teléfono sin importar que el proceso se
+// haya matado y vuelto a abrir. Por eso se guarda ahí apenas se
+// detecta un token válido, y se usa como respaldo si la URL ya no lo
+// trae. También se lee la URL cruda (window.location.search) además
+// de lo que entrega useSearchParams, por si el router no llega a
+// re-parsear la URL correctamente tras ese reinicio.
+function leerTokenDeUrlCruda() {
+  try {
+    return new URLSearchParams(window.location.search).get('token') || '';
+  } catch {
+    return '';
+  }
+}
 function leerTokenGuardado() {
   try {
-    return sessionStorage.getItem(CLAVE_TOKEN_GUARDADO) || '';
+    return localStorage.getItem(CLAVE_TOKEN_GUARDADO) || '';
   } catch {
     return '';
   }
 }
 function guardarToken(valor) {
   try {
-    sessionStorage.setItem(CLAVE_TOKEN_GUARDADO, valor);
+    localStorage.setItem(CLAVE_TOKEN_GUARDADO, valor);
   } catch {
     // Navegación privada o storage bloqueado: sin esto el token solo
     // vive en la URL, igual que antes — no es un error que deba frenar nada.
@@ -64,7 +77,7 @@ function guardarToken(valor) {
 
 export default function SubirBoletaPublico() {
   const [params] = useSearchParams();
-  const tokenDeUrl = params.get('token') || '';
+  const tokenDeUrl = params.get('token') || leerTokenDeUrlCruda();
   const token = tokenDeUrl || leerTokenGuardado();
 
   useEffect(() => {
