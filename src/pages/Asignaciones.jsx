@@ -59,8 +59,24 @@ export default function Asignaciones() {
       { sucursalId: Number(sucursalId), fechaInicio: fecha, fechaFin: fecha, tipo, motoristaIds: seleccionados },
       {
         onSuccess: (data) => {
-          setSeleccionados([]);
-          mostrarToast(`Se asignó a ${data.asignados} motorista(s) y se marcó su ingreso de asistencia de una vez.`);
+          const fallidos = data.fallidos ?? [];
+          if (fallidos.length === 0) {
+            setSeleccionados([]);
+            mostrarToast(`Se asignó a ${data.asignados} motorista(s) y se marcó su ingreso de asistencia de una vez.`);
+            return;
+          }
+          // Deja marcados (seleccionados) solo a los que fallaron, para
+          // que quede claro a cuáles hay que revisar — los que sí se
+          // asignaron se quitan de la selección.
+          const idsFallidos = fallidos.map((f) => f.motoristaId);
+          setSeleccionados(idsFallidos);
+          const nombresFallidos = fallidos
+            .map((f) => disponibles?.find((m) => m.motoristaId === f.motoristaId)?.nombre || `ID ${f.motoristaId}`)
+            .join(', ');
+          mostrarToast(
+            `Se asignó a ${data.asignados} de ${data.asignados + fallidos.length} motorista(s). No se pudo asignar a: ${nombresFallidos} (ya tenía una asignación ese día).`,
+            'error'
+          );
         }
       }
     );
