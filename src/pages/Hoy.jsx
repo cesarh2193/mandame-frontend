@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { useAuth } from '../context/AuthContext';
-import { useResumenHoy, useCuadreCads, useRepartosHoy } from '../api/hooks';
+import { useResumenHoy, useCuadreCads, useRepartosHoy, useDocumentosCad } from '../api/hooks';
 
 const MAX_CADS_EN_GRAFICA = 10;
 const MAX_MOTORISTAS_EN_GRAFICA = 20;
@@ -17,6 +17,7 @@ export default function Hoy() {
   const { data: resumen, isLoading } = useResumenHoy(sucursalId);
   const { data: cuadreCads } = useCuadreCads(); // el backend ya filtra: solo trae datos si el rol es Administrador
   const { data: repartosHoy } = useRepartosHoy(sucursalId); // gráfica del no-Administrador
+  const { data: documentosCad } = useDocumentosCad(sucursalId); // % de expediente completo, por CAD
 
   if (isLoading) return <p>Cargando...</p>;
 
@@ -50,6 +51,13 @@ export default function Hoy() {
   const repartosVisibles = (repartosHoy ?? []).slice(0, MAX_MOTORISTAS_EN_GRAFICA);
   const hayMasMotoristas = (repartosHoy ?? []).length > repartosVisibles.length;
 
+  // Documentos de expediente por CAD — peor completitud primero, para
+  // ver de un vistazo qué CAD se está quedando atrás en subir los
+  // documentos de su personal.
+  const documentosOrdenados = [...(documentosCad ?? [])].sort((a, b) => a.porcentaje - b.porcentaje);
+  const documentosVisibles = documentosOrdenados.slice(0, MAX_CADS_EN_GRAFICA);
+  const hayMasDocumentosCad = documentosOrdenados.length > documentosVisibles.length;
+
   return (
     <div>
       <h1 className="page-title">Hoy</h1>
@@ -71,6 +79,19 @@ export default function Hoy() {
         <Kpi label="Pendientes de cierre" value={resumen?.pendientesCierre ?? '—'} nota="requiere acción" tono="warn" />
         <Kpi label="Cerrados" value={resumen?.cerrados ?? '—'} nota="listos para autorizar" tono="ok" />
       </div>
+
+      {documentosVisibles.length > 0 && (
+        <div className="card">
+          <h2>Documentos del expediente por CAD</h2>
+          <p className="page-sub" style={{ marginBottom: 12 }}>
+            % de documentos cargados de los motoristas activos{hayMasDocumentosCad ? ` (los ${documentosVisibles.length} con menor avance, de ${documentosOrdenados.length} CAD)` : ''}
+          </p>
+          <RankingDocumentos filas={documentosVisibles} />
+          <p style={{ fontSize: 12.5, marginTop: 10 }}>
+            <Link to="/informes/documentos-motoristas">Ver el detalle completo por motorista →</Link>
+          </p>
+        </div>
+      )}
 
       {esAdmin && cuadreVisible.length > 0 && (
         <div className="card">
@@ -173,6 +194,43 @@ function RankingPendientes({ filas }) {
             />
           </div>
           <span className="status-pill pending" style={{ minWidth: 28, textAlign: 'center' }}>{f.pendientes}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function colorPorcentaje(porcentaje) {
+  if (porcentaje === 100) return 'var(--teal-dark, #0B5C4C)';
+  if (porcentaje >= 50) return 'var(--amber-dark, #8F5710)';
+  return 'var(--coral-dark, #9E2A2A)';
+}
+
+// Igual criterio que RankingPendientes: barras en CSS puro, no
+// recharts. Acá el ancho de la barra ES el porcentaje (0-100) en vez
+// de ser relativo al máximo del grupo, porque un % ya es comparable
+// entre CAD sin necesidad de normalizar contra el peor caso.
+function RankingDocumentos({ filas }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {filas.map((f, i) => (
+        <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ width: 18, fontSize: 12, color: 'var(--text-3)', textAlign: 'right' }}>{i + 1}</span>
+          <span style={{ width: 130, fontSize: 13, fontWeight: 600, flexShrink: 0 }}>{f.sucursal}</span>
+          <div style={{ flex: 1, background: 'var(--chip-bg, #EEF0F3)', borderRadius: 20, overflow: 'hidden', height: 20 }}>
+            <div
+              style={{
+                width: `${f.porcentaje}%`,
+                height: '100%',
+                background: colorPorcentaje(f.porcentaje),
+                borderRadius: 20,
+                transition: 'width .3s'
+              }}
+            />
+          </div>
+          <span style={{ minWidth: 40, textAlign: 'right', fontSize: 12.5, fontWeight: 700, color: colorPorcentaje(f.porcentaje) }}>
+            {f.porcentaje}%
+          </span>
         </div>
       ))}
     </div>

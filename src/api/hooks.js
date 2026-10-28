@@ -44,6 +44,13 @@ export function useCuadreCads() {
   });
 }
 
+export function useDocumentosCad(sucursalId) {
+  return useQuery({
+    queryKey: ['documentos-cad', sucursalId],
+    queryFn: () => api.get('/dashboard/documentos-cad', { params: { sucursalId: sucursalId || undefined } }).then((r) => r.data)
+  });
+}
+
 export function useRepartosHoy(sucursalId) {
   // gráfica de repartos por motorista que ve un no-Administrador
   return useQuery({
