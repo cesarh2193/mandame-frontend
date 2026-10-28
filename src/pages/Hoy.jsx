@@ -51,12 +51,19 @@ export default function Hoy() {
   const repartosVisibles = (repartosHoy ?? []).slice(0, MAX_MOTORISTAS_EN_GRAFICA);
   const hayMasMotoristas = (repartosHoy ?? []).length > repartosVisibles.length;
 
-  // Documentos de expediente por CAD — peor completitud primero, para
-  // ver de un vistazo qué CAD se está quedando atrás en subir los
-  // documentos de su personal.
-  const documentosOrdenados = [...(documentosCad ?? [])].sort((a, b) => a.porcentaje - b.porcentaje);
-  const documentosVisibles = documentosOrdenados.slice(0, MAX_CADS_EN_GRAFICA);
-  const hayMasDocumentosCad = documentosOrdenados.length > documentosVisibles.length;
+  // Documentos de expediente por CAD — mejor avance primero, para que
+  // se note que sí hay progreso real en algunos CAD en vez de abrir
+  // con una fila de puros 0%. Se complementa con un resumen de 3
+  // números (en 0%, en progreso, promedio general) para que se
+  // entienda el panorama completo de un vistazo, sin tener que leer
+  // los 35 CAD uno por uno.
+  const documentosOrdenados = [...(documentosCad ?? [])].sort((a, b) => b.porcentaje - a.porcentaje);
+  const cadEnCero = documentosOrdenados.filter((f) => f.porcentaje === 0).length;
+  const cadEnProgreso = documentosOrdenados.filter((f) => f.porcentaje > 0 && f.porcentaje < 100).length;
+  const cadCompletos = documentosOrdenados.filter((f) => f.porcentaje === 100).length;
+  const promedioDocumentos = documentosOrdenados.length
+    ? Math.round(documentosOrdenados.reduce((suma, f) => suma + f.porcentaje, 0) / documentosOrdenados.length)
+    : 0;
 
   return (
     <div>
@@ -79,19 +86,6 @@ export default function Hoy() {
         <Kpi label="Pendientes de cierre" value={resumen?.pendientesCierre ?? '—'} nota="requiere acción" tono="warn" />
         <Kpi label="Cerrados" value={resumen?.cerrados ?? '—'} nota="listos para autorizar" tono="ok" />
       </div>
-
-      {documentosVisibles.length > 0 && (
-        <div className="card">
-          <h2>Documentos del expediente por CAD</h2>
-          <p className="page-sub" style={{ marginBottom: 12 }}>
-            % de documentos cargados de los motoristas activos{hayMasDocumentosCad ? ` (los ${documentosVisibles.length} con menor avance, de ${documentosOrdenados.length} CAD)` : ''}
-          </p>
-          <RankingDocumentos filas={documentosVisibles} />
-          <p style={{ fontSize: 12.5, marginTop: 10 }}>
-            <Link to="/informes/documentos-motoristas">Ver el detalle completo por motorista →</Link>
-          </p>
-        </div>
-      )}
 
       {esAdmin && cuadreVisible.length > 0 && (
         <div className="card">
@@ -166,6 +160,25 @@ export default function Hoy() {
           </ResponsiveContainer>
         </div>
       )}
+
+      {documentosOrdenados.length > 0 && (
+        <div className="card">
+          <h2>Documentos del expediente por CAD</h2>
+          <p className="page-sub" style={{ marginBottom: 14 }}>
+            Qué tanto ha subido cada CAD de los documentos que se le piden a sus motoristas
+          </p>
+          <div className="grid-kpi" style={{ marginBottom: 18 }}>
+            <Kpi label="Sin ningún documento" value={cadEnCero} nota={cadEnCero > 0 ? 'requiere atención' : undefined} tono="warn" />
+            <Kpi label="En progreso" value={cadEnProgreso} />
+            <Kpi label="Completos" value={cadCompletos} nota={cadCompletos > 0 ? 'listos' : undefined} tono="ok" />
+            <Kpi label="Promedio general" value={`${promedioDocumentos}%`} />
+          </div>
+          <TablaDocumentosCad filas={documentosOrdenados} />
+          <p style={{ fontSize: 12.5, marginTop: 12 }}>
+            <Link to="/informes/documentos-motoristas">Ver el detalle completo por motorista →</Link>
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -206,29 +219,25 @@ function colorPorcentaje(porcentaje) {
   return 'var(--coral-dark, #9E2A2A)';
 }
 
-// Igual criterio que RankingPendientes: barras en CSS puro, no
-// recharts. Acá el ancho de la barra ES el porcentaje (0-100) en vez
-// de ser relativo al máximo del grupo, porque un % ya es comparable
-// entre CAD sin necesidad de normalizar contra el peor caso.
-function RankingDocumentos({ filas }) {
+// A diferencia de RankingPendientes, acá el número importa más que la
+// barra: con muchos CAD en 0% o cerca, una barra casi invisible no
+// comunica nada. Es una grilla compacta de dos columnas (nombre + %),
+// ya viene ordenada de mejor a peor avance por quien la llama.
+function TablaDocumentosCad({ filas }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {filas.map((f, i) => (
-        <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ width: 18, fontSize: 12, color: 'var(--text-3)', textAlign: 'right' }}>{i + 1}</span>
-          <span style={{ width: 130, fontSize: 13, fontWeight: 600, flexShrink: 0 }}>{f.sucursal}</span>
-          <div style={{ flex: 1, background: 'var(--chip-bg, #EEF0F3)', borderRadius: 20, overflow: 'hidden', height: 20 }}>
-            <div
-              style={{
-                width: `${f.porcentaje}%`,
-                height: '100%',
-                background: colorPorcentaje(f.porcentaje),
-                borderRadius: 20,
-                transition: 'width .3s'
-              }}
-            />
-          </div>
-          <span style={{ minWidth: 40, textAlign: 'right', fontSize: 12.5, fontWeight: 700, color: colorPorcentaje(f.porcentaje) }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '4px 20px' }}>
+      {filas.map((f) => (
+        <div
+          key={f.id}
+          style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10,
+            padding: '7px 0', borderBottom: '1px solid var(--line, #E3E5EA)'
+          }}
+        >
+          <span style={{ fontSize: 13, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {f.sucursal}
+          </span>
+          <span style={{ fontSize: 13.5, fontWeight: 700, color: colorPorcentaje(f.porcentaje), flexShrink: 0 }}>
             {f.porcentaje}%
           </span>
         </div>
