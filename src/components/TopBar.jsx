@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { IconoLuna, IconoSol, IconoCerrarSesion } from './Iconos';
 import logoMandame from '../assets/logo-mandame.png';
@@ -7,6 +8,7 @@ const DURACION_ACCESOS_MS = 5000;
 
 export default function TopBar({ onAbrirMenu }) {
   const { usuario, logout } = useAuth();
+  const navigate = useNavigate();
   const [oscuro, setOscuro] = useState(false);
   const [mostrarAccesos, setMostrarAccesos] = useState(false);
   const cierreAutomatico = useRef(null);
@@ -54,6 +56,14 @@ export default function TopBar({ onAbrirMenu }) {
                   ? usuario.sucursales.map((s) => s.nombre).join(', ')
                   : 'Todas las sucursales'}
               </div>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                style={{ width: '100%', marginTop: 10 }}
+                onClick={() => { setMostrarAccesos(false); navigate('/cambiar-clave'); }}
+              >
+                Cambiar contraseña
+              </button>
             </div>
           )}
         </div>

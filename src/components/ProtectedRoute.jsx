@@ -12,6 +12,8 @@ export default function ProtectedRoute({ children, roles, rolesExcluidos }) {
   const { isAuthenticated, authLoading, usuario } = useAuth();
   if (authLoading) return null;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  // Contraseña temporal: primero tiene que elegir la suya.
+  if (usuario?.debeCambiarClave) return <Navigate to="/cambiar-clave" replace />;
   const rolesUsuario = usuario?.roles ?? [];
   if (roles && !rolesUsuario.some((r) => roles.includes(r))) return <Navigate to={rutaInicio(usuario)} replace />;
   if (rolesExcluidos && rolesUsuario.length > 0 && rolesUsuario.every((r) => rolesExcluidos.includes(r))) {

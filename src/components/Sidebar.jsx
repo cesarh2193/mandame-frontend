@@ -33,7 +33,8 @@ const SECCIONES = [
     { to: '/catalogos/usuarios', label: 'Usuarios y permisos', roles: ['Admin'] }
   ]},
   { titulo: 'Soporte', items: [
-    { to: '/ayuda', label: 'Ayuda' }
+    { to: '/ayuda', label: 'Ayuda' },
+    { to: '/cambiar-clave', label: 'Cambiar contraseña' }
   ]}
 ];
 

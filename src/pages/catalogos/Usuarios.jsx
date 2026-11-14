@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import Modal from '../../components/Modal';
-import { useUsuarios, useUsuariosSinCuenta, useUsuariosMutation, useSucursales } from '../../api/hooks';
+import { useUsuarios, useUsuariosSinCuenta, useUsuariosMutation, useSucursales, useReenviarInvitacion, useInvitarPendientes } from '../../api/hooks';
 import { useToast } from '../../context/ToastContext';
-import { IconoOjo, IconoLapiz, IconoCandado, IconoCandadoAbierto } from '../../components/Iconos';
+import { IconoOjo, IconoLapiz, IconoCandado, IconoCandadoAbierto, IconoSobre } from '../../components/Iconos';
+import { validarClaveNueva, AYUDA_CLAVE } from '../../utils/clave';
 
 // value es el nombre real en la tabla "rol" de la base de datos (que
 // dice "Admin", no "Administrador"); label es lo que se muestra.
@@ -37,7 +38,12 @@ export default function Usuarios() {
   const mut = useUsuariosMutation();
   const mostrarToast = useToast();
 
-  const [form, setForm] = useState({ personaId: '', usuario: '', correo: '', password: '', roles: [], sucursalIds: [], recibirNotificacionesCierre: false });
+  const [form, setForm] = useState({ personaId: '', usuario: '', correo: '', password: '', modoAcceso: 'invitacion', roles: [], sucursalIds: [], recibirNotificacionesCierre: false });
+  // Link de activación para compartir a mano cuando el correo no se pudo enviar.
+  const [linkCompartir, setLinkCompartir] = useState(null);
+  const [errorForm, setErrorForm] = useState('');
+  const reenviar = useReenviarInvitacion();
+  const invitarPendientes = useInvitarPendientes();
   const [editando, setEditando] = useState(null);
   const [viendo, setViendo] = useState(null);
 
@@ -109,13 +115,61 @@ export default function Usuarios() {
     }));
   }
 
+  // Respuesta del backend al mandar un link: si salió el correo se avisa;
+  // si no, se muestra el link para mandarlo por WhatsApp.
+  function manejarInvitacion(usuario, invitacion) {
+    if (!invitacion) return;
+    if (invitacion.enviado) {
+      mostrarToast(`Se envió el link a ${invitacion.correo}.`);
+    } else if (invitacion.link) {
+      setLinkCompartir({ usuario, ...invitacion });
+    }
+  }
+
   function crear(e) {
     e.preventDefault();
-    mut.crear.mutate(form, {
-      onSuccess: () => {
-        setForm({ personaId: '', usuario: '', correo: '', password: '', roles: [], sucursalIds: [], recibirNotificacionesCierre: false });
-        mostrarToast('Usuario creado correctamente.');
+    setErrorForm('');
+    const conTemporal = form.modoAcceso === 'temporal';
+    if (conTemporal) {
+      const error = validarClaveNueva(form.password);
+      if (error) return setErrorForm(error);
+    } else if (!form.correo.trim()) {
+      return setErrorForm('Pon el correo al que le llegará la invitación, o elige "Contraseña temporal".');
+    }
+    const { modoAcceso, ...payload } = form;
+    if (!conTemporal) payload.password = '';
+    mut.crear.mutate(payload, {
+      onSuccess: (data) => {
+        setForm({ personaId: '', usuario: '', correo: '', password: '', modoAcceso: 'invitacion', roles: [], sucursalIds: [], recibirNotificacionesCierre: false });
+        if (conTemporal) {
+          mostrarToast(`Usuario creado. Al entrar con la contraseña temporal se le pedirá cambiarla.`);
+        } else {
+          if (data?.invitacion?.enviado === false && !data.invitacion.link) mostrarToast('Usuario creado.');
+          manejarInvitacion(payload.usuario, data?.invitacion);
+        }
       }
+    });
+  }
+
+  function onReenviar(u) {
+    const accion = u.estadoClave === 'SIN_CLAVE' ? 'el link para activar su cuenta' : 'un link para cambiar su contraseña';
+    if (!window.confirm(`¿Enviar a ${u.usuario} ${accion}?`)) return;
+    reenviar.mutate(u.id, {
+      onSuccess: (r) => manejarInvitacion(u.usuario, r),
+      onError: (err) => mostrarToast(err.response?.data?.error || 'No se pudo generar el link.', 'error')
+    });
+  }
+
+  const pendientesSinClave = (usuarios ?? []).filter((u) => u.estadoClave === 'SIN_CLAVE' && u.estado !== 'BLOQUEADO');
+
+  function onInvitarPendientes() {
+    if (!window.confirm(`¿Enviar la invitación por correo a las ${pendientesSinClave.length} cuentas que todavía no tienen contraseña?`)) return;
+    invitarPendientes.mutate(undefined, {
+      onSuccess: (r) => {
+        if (r.enviados === r.total) mostrarToast(`Se enviaron ${r.enviados} invitaciones.`);
+        else mostrarToast(`Se enviaron ${r.enviados} de ${r.total}. ${r.noEnviados[0]?.motivo || ''}`, r.enviados ? 'ok' : 'error');
+      },
+      onError: (err) => mostrarToast(err.response?.data?.error || 'No se pudieron enviar.', 'error')
     });
   }
 
@@ -162,15 +216,42 @@ export default function Usuarios() {
             <input value={form.usuario} onChange={(e) => setForm({ ...form, usuario: e.target.value })} required />
           </div>
         </div>
+        <div className="field" style={{ marginBottom: 12 }}>
+          <label>¿Cómo va a entrar por primera vez?</label>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className={`btn ${form.modoAcceso === 'invitacion' ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setForm({ ...form, modoAcceso: 'invitacion', password: '' })}
+            >
+              Enviarle invitación por correo
+            </button>
+            <button
+              type="button"
+              className={`btn ${form.modoAcceso === 'temporal' ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setForm({ ...form, modoAcceso: 'temporal' })}
+            >
+              Contraseña temporal
+            </button>
+          </div>
+          <small style={{ color: 'var(--text-3)' }}>
+            {form.modoAcceso === 'invitacion'
+              ? 'Le llega un link para que elija su propia contraseña (vence en 72 horas). Si el correo no sale, te mostramos el link para mandárselo por WhatsApp.'
+              : 'Le das una contraseña para su primer ingreso; al entrar, el sistema le pide cambiarla por una propia.'}
+          </small>
+        </div>
         <div className="form-grid">
           <div className="field">
-            <label>Correo electrónico</label>
-            <input type="email" value={form.correo} onChange={(e) => setForm({ ...form, correo: e.target.value })} required />
+            <label>Correo electrónico {form.modoAcceso === 'temporal' && '(opcional)'}</label>
+            <input type="email" value={form.correo} onChange={(e) => setForm({ ...form, correo: e.target.value })} required={form.modoAcceso === 'invitacion'} />
           </div>
-          <div className="field">
-            <label>Contraseña inicial</label>
-            <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
-          </div>
+          {form.modoAcceso === 'temporal' && (
+            <div className="field">
+              <label>Contraseña temporal</label>
+              <input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="off" required />
+              <small style={{ color: 'var(--text-3)' }}>{AYUDA_CLAVE}</small>
+            </div>
+          )}
         </div>
         <p style={{ fontSize: 12, color: 'var(--text-3)' }}>
           Si el rol es Gerente, a este correo le llega el resumen automático al autorizar cierres.
@@ -202,6 +283,11 @@ export default function Usuarios() {
           <label>CAD (sucursales) a las que tiene acceso — puede elegir más de una</label>
           <SelectorSucursales sucursales={sucursales} seleccionadas={form.sucursalIds} onToggle={toggleSucursalForm} />
         </div>
+        {errorForm && (
+          <p style={{ color: 'var(--coral-dark)', background: 'var(--coral-light)', padding: '10px 12px', borderRadius: 8, fontSize: 12.5, marginBottom: 12 }}>
+            {errorForm}
+          </p>
+        )}
         {mut.crear.isError && (
           <p style={{ color: 'var(--coral-dark)', background: 'var(--coral-light)', padding: '10px 12px', borderRadius: 8, fontSize: 12.5, marginBottom: 12 }}>
             No se pudo crear: {mut.crear.error?.response?.data?.error || mut.crear.error?.message || 'error desconocido'}.
@@ -213,7 +299,14 @@ export default function Usuarios() {
       </form>
 
       <div className="card">
-        <h2>Usuarios activos</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <h2>Usuarios activos</h2>
+          {pendientesSinClave.length > 0 && (
+            <button type="button" className="btn btn-ghost" onClick={onInvitarPendientes} disabled={invitarPendientes.isPending}>
+              {invitarPendientes.isPending ? 'Enviando...' : `Invitar cuentas sin contraseña (${pendientesSinClave.length})`}
+            </button>
+          )}
+        </div>
         {usuariosError && (
           <p style={{ color: 'var(--coral-dark)', background: 'var(--coral-light)', padding: '10px 12px', borderRadius: 8, fontSize: 12.5, marginBottom: 12 }}>
             No se pudo cargar el listado: {usuariosErrorInfo?.response?.data?.error || usuariosErrorInfo?.message || 'error desconocido'}.
@@ -265,6 +358,9 @@ export default function Usuarios() {
                     >
                       {u.estado === 'BLOQUEADO' ? <IconoCandadoAbierto /> : <IconoCandado />}
                     </button>
+                    <button type="button" className="btn btn-ghost icon-btn" title="Enviar link de contraseña" disabled={reenviar.isPending} onClick={() => onReenviar(u)}>
+                      <IconoSobre />
+                    </button>
                   </div>
                 </div>
                 <div className="mobile-usuario-meta">
@@ -282,6 +378,7 @@ export default function Usuarios() {
                   <span className={`status-pill ${u.estado === 'BLOQUEADO' ? 'warn' : 'ok'}`}>
                     {u.estado === 'BLOQUEADO' ? 'Bloqueado' : 'Activo'}
                   </span>
+                  <EstadoClave valor={u.estadoClave} />
                 </div>
               </div>
             ))}
@@ -304,6 +401,7 @@ export default function Usuarios() {
                     <span className={`status-pill ${u.estado === 'BLOQUEADO' ? 'warn' : 'ok'}`}>
                       {u.estado === 'BLOQUEADO' ? 'Bloqueado' : 'Activo'}
                     </span>
+                    <EstadoClave valor={u.estadoClave} />
                   </td>
                   <td style={{ whiteSpace: 'nowrap' }}>
                     <div style={{ display: 'flex', gap: 6 }}>
@@ -326,6 +424,9 @@ export default function Usuarios() {
                         onClick={() => onBloquear(u)}
                       >
                         {u.estado === 'BLOQUEADO' ? <IconoCandadoAbierto /> : <IconoCandado />}
+                      </button>
+                      <button type="button" className="btn btn-ghost icon-btn" title="Enviar link de contraseña" disabled={reenviar.isPending} onClick={() => onReenviar(u)}>
+                        <IconoSobre />
                       </button>
                     </div>
                   </td>
@@ -414,12 +515,15 @@ export default function Usuarios() {
               </div>
             </div>
             <div className="field" style={{ marginBottom: 12 }}>
-              <label>Nueva contraseña (dejar en blanco para no cambiarla)</label>
+              <label>Contraseña temporal (dejar en blanco para no cambiarla)</label>
               <input
                 type="password"
                 value={editando.nuevaPassword}
                 onChange={(e) => setEditando({ ...editando, nuevaPassword: e.target.value })}
               />
+              <small style={{ color: 'var(--text-3)' }}>
+                Al entrar con ella se le pedirá elegir una propia. {AYUDA_CLAVE} También puedes mandarle un link con el botón del sobre.
+              </small>
             </div>
             <div className="field" style={{ marginBottom: 12 }}>
               <label>CAD (sucursales) a las que tiene acceso — puede elegir más de una</label>
@@ -433,8 +537,35 @@ export default function Usuarios() {
           </>
         )}
       </Modal>
+
+      <Modal titulo="Link para compartir" abierto={!!linkCompartir} onCerrar={() => setLinkCompartir(null)} ancho={520} soloLectura>
+        {linkCompartir && (
+          <>
+            <p style={{ fontSize: 13 }}>
+              {linkCompartir.motivo || 'No se pudo enviar el correo.'} Mándale este link a <strong>{linkCompartir.usuario}</strong> por
+              WhatsApp para que {linkCompartir.tipo === 'activar' ? 'active su cuenta' : 'cambie su contraseña'}.
+              Vence en {linkCompartir.tipo === 'activar' ? '72 horas' : '1 hora'} y sirve una sola vez.
+            </p>
+            <textarea readOnly value={linkCompartir.link} rows={4} style={{ width: '100%', fontSize: 12 }} onFocus={(e) => e.target.select()} />
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ marginTop: 10 }}
+              onClick={() => navigator.clipboard?.writeText(linkCompartir.link).then(() => mostrarToast('Link copiado.'))}
+            >
+              Copiar link
+            </button>
+          </>
+        )}
+      </Modal>
     </div>
   );
+}
+
+function EstadoClave({ valor }) {
+  if (valor === 'SIN_CLAVE') return <span className="status-pill warn" style={{ marginLeft: 6 }} title="Todavía no eligió contraseña">Sin contraseña</span>;
+  if (valor === 'TEMPORAL') return <span className="status-pill warn" style={{ marginLeft: 6 }} title="Debe cambiarla al entrar">Clave temporal</span>;
+  return null;
 }
 
 function SelectorSucursales({ sucursales, seleccionadas, onToggle }) {

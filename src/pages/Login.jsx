@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { rutaInicio } from '../utils/rutas';
 import logoMandame from '../assets/logo-mandame.png';
@@ -10,16 +10,15 @@ export default function Login() {
   const { login, loginPending, loginError } = useAuth();
   const navigate = useNavigate();
 
-  const requiereRestablecer = loginError?.response?.data?.code === 'PASSWORD_RESET_REQUIRED';
-  const mensajeError = requiereRestablecer
-    ? 'Esta cuenta viene de la migración y no tiene contraseña. Contacta a un Administrador para restablecerla.'
-    : 'Usuario o contraseña incorrectos.';
+  // El backend ya manda el mensaje adecuado (sin contraseña todavía,
+  // cuenta inactiva, demasiados intentos, etc.).
+  const mensajeError = loginError?.response?.data?.error || 'No se pudo iniciar sesión. Revisa tu conexión.';
 
   async function onSubmit(e) {
     e.preventDefault();
     try {
       const usuarioLogueado = await login({ usuario, password });
-      navigate(rutaInicio(usuarioLogueado));
+      navigate(usuarioLogueado.debeCambiarClave ? '/cambiar-clave' : rutaInicio(usuarioLogueado));
     } catch {
       // loginError ya queda seteado por la mutación; no hace falta nada más aquí
     }
@@ -59,6 +58,10 @@ export default function Login() {
         <button className="btn btn-primary" style={{ width: '100%' }} disabled={loginPending}>
           {loginPending ? 'Ingresando...' : 'Iniciar sesión'}
         </button>
+
+        <p style={{ textAlign: 'center', marginTop: 16, fontSize: 12.5 }}>
+          <Link to="/olvide-clave">¿Olvidaste tu contraseña?</Link>
+        </p>
       </form>
     </div>
   );

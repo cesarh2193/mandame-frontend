@@ -13,9 +13,32 @@ export function useLogin() {
   });
 }
 
-export function useRestablecer() {
+// "¿Olvidaste tu contraseña?": pide que se mande el link al correo.
+export function useOlvideClave() {
   return useMutation({
-    mutationFn: (payload) => api.post('/auth/restablecer', payload).then((r) => r.data)
+    mutationFn: (usuario) => api.post('/auth/olvide-clave', { usuario }).then((r) => r.data)
+  });
+}
+
+// Datos del link de activación/restablecer (usuario, nombre, tipo).
+export function useInfoLinkClave(token) {
+  return useQuery({
+    queryKey: ['link-clave', token],
+    queryFn: () => api.get('/auth/definir-clave', { params: { token } }).then((r) => r.data),
+    enabled: !!token,
+    retry: false
+  });
+}
+
+export function useDefinirClave() {
+  return useMutation({
+    mutationFn: (payload) => api.post('/auth/definir-clave', payload).then((r) => r.data)
+  });
+}
+
+export function useCambiarClave() {
+  return useMutation({
+    mutationFn: (payload) => api.post('/auth/cambiar-clave', payload).then((r) => r.data)
   });
 }
 
@@ -320,3 +343,19 @@ export const useUsuariosSinCuenta = () => useQuery({
   queryFn: () => api.get('/personal', { params: { sinUsuario: true } }).then((r) => r.data)
 });
 export const useUsuariosMutation = () => useCatalogoMutation('usuarios');
+
+// Reenvía el link de activación/restablecer de un usuario.
+export function useReenviarInvitacion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.post(`/usuarios/${id}/invitacion`).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['usuarios'] })
+  });
+}
+
+// Manda la invitación a todas las cuentas que todavía no tienen contraseña.
+export function useInvitarPendientes() {
+  return useMutation({
+    mutationFn: () => api.post('/usuarios/invitar-pendientes').then((r) => r.data)
+  });
+}

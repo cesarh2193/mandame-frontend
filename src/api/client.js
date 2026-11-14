@@ -82,6 +82,12 @@ api.interceptors.response.use(
       window.location.href = '/login';
     }
 
+    // Entró con contraseña temporal: el backend no deja hacer nada más
+    // hasta que la cambie.
+    if (err.response?.data?.code === 'PASSWORD_CHANGE_REQUIRED' && window.location.pathname !== '/cambiar-clave') {
+      window.location.href = '/cambiar-clave';
+    }
+
     // Solo se reportan errores "de verdad" (el servidor se cayó, no hay
     // conexión) — un 400/404/403 normalmente ya es un mensaje esperado
     // que la pantalla le muestra al usuario con un toast, no hace falta

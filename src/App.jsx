@@ -5,7 +5,9 @@ import Layout from './components/Layout';
 import { rutaInicio } from './utils/rutas';
 
 import Login from './pages/Login';
-import Restablecer from './pages/Restablecer';
+import OlvideClave from './pages/OlvideClave';
+import DefinirClave from './pages/DefinirClave';
+import CambiarClave from './pages/CambiarClave';
 import SubirBoletaPublico from './pages/SubirBoletaPublico';
 import Hoy from './pages/Hoy';
 import Monitoreo from './pages/Monitoreo';
@@ -39,7 +41,11 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/restablecer" element={<Restablecer />} />
+          <Route path="/olvide-clave" element={<OlvideClave />} />
+          <Route path="/definir-clave" element={<DefinirClave />} />
+          <Route path="/cambiar-clave" element={<CambiarClave />} />
+          {/* La pantalla vieja dejaba poner contraseña sabiendo solo el usuario */}
+          <Route path="/restablecer" element={<Navigate to="/olvide-clave" replace />} />
           <Route path="/subir-boleta" element={<SubirBoletaPublico />} />
 
           <Route

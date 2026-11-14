@@ -45,6 +45,11 @@ export function AuthProvider({ children }) {
     [loginMutation, queryClient]
   );
 
+  // Después de cambiar la contraseña temporal ya no se le exige de nuevo.
+  const marcarClaveCambiada = useCallback(() => {
+    setUsuario((u) => (u ? { ...u, debeCambiarClave: false } : u));
+  }, []);
+
   const logout = useCallback(() => {
     queryClient.clear();
     setToken(null);
@@ -57,6 +62,7 @@ export function AuthProvider({ children }) {
     authLoading: hayTokenSinUsuario && usuarioActualQuery.isLoading,
     login,
     logout,
+    marcarClaveCambiada,
     loginPending: loginMutation.isPending,
     loginError: loginMutation.error
   };
