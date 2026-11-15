@@ -20,6 +20,8 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true
+    // Sin mapas: con sourcemap el código fuente completo (con comentarios)
+    // quedaba público en /assets/*.map y se veía desde F12 → Sources.
+    sourcemap: false
   }
 });
