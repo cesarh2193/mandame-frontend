@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { setToken, getToken } from '../api/client';
+import { api, setToken, getToken } from '../api/client';
+import { marcarActividadAhora } from '../utils/actividad';
 import { useLogin, useUsuarioActual } from '../api/hooks';
 
 const AuthContext = createContext(null);
@@ -38,6 +39,7 @@ export function AuthProvider({ children }) {
       const data = await loginMutation.mutateAsync(credenciales);
       // data esperado: { token, usuario: { nombre, roles: [...], sucursales: [...] } }
       queryClient.clear();
+      marcarActividadAhora();
       setToken(data.token);
       setUsuario(data.usuario);
       return data.usuario;
@@ -50,11 +52,31 @@ export function AuthProvider({ children }) {
     setUsuario((u) => (u ? { ...u, debeCambiarClave: false } : u));
   }, []);
 
+  // Además de borrar el token del navegador, le avisa al servidor para que
+  // ese token deje de servir (si alguien lo copió, ya no le funciona).
   const logout = useCallback(() => {
+    const token = getToken();
+    if (token) {
+      api.post('/auth/logout', null, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
+    }
     queryClient.clear();
     setToken(null);
     setUsuario(null);
   }, [queryClient]);
+
+  // Recarga directo a /login con el aviso. No se limpia el estado de React
+  // antes: eso haría que la app redirija sola a /login y se pierda el aviso.
+  // keepalive: el aviso al servidor sale aunque la página ya se esté yendo.
+  const cerrarPorInactividad = useCallback(() => {
+    const token = getToken();
+    if (token) {
+      fetch(`${api.defaults.baseURL}/auth/logout`, {
+        method: 'POST', headers: { Authorization: `Bearer ${token}` }, keepalive: true
+      }).catch(() => {});
+    }
+    setToken(null);
+    window.location.replace('/login?motivo=inactividad');
+  }, []);
 
   const value = {
     usuario,
@@ -62,6 +84,7 @@ export function AuthProvider({ children }) {
     authLoading: hayTokenSinUsuario && usuarioActualQuery.isLoading,
     login,
     logout,
+    cerrarPorInactividad,
     marcarClaveCambiada,
     loginPending: loginMutation.isPending,
     loginError: loginMutation.error

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { segundosSinActividad } from '../utils/actividad';
 
 // Un solo cliente axios para toda la app. El token se guarda en
 // memoria (dentro de este módulo) y también en localStorage para
@@ -25,7 +26,11 @@ export const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = getToken();
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+    // Para el cierre por inactividad que controla el servidor.
+    config.headers['X-Actividad'] = String(segundosSinActividad());
+  }
   return config;
 });
 
@@ -79,7 +84,7 @@ api.interceptors.response.use(
     const teniaToken = !!err.config?.headers?.Authorization;
     if (err.response?.status === 401 && teniaToken) {
       setToken(null);
-      window.location.href = '/login';
+      window.location.href = err.response?.data?.code === 'SESSION_IDLE' ? '/login?motivo=inactividad' : '/login';
     }
 
     // Entró con contraseña temporal: el backend no deja hacer nada más

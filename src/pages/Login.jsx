@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { rutaInicio } from '../utils/rutas';
 import logoMandame from '../assets/logo-mandame.png';
@@ -9,6 +9,8 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const { login, loginPending, loginError } = useAuth();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const porInactividad = params.get('motivo') === 'inactividad';
 
   // El backend ya manda el mensaje adecuado (sin contraseña todavía,
   // cuenta inactiva, demasiados intentos, etc.).
@@ -33,6 +35,12 @@ export default function Login() {
         <p style={{ color: 'var(--text-3)', fontSize: 12.5, marginBottom: 20, textAlign: 'center' }}>
           Gestión de repartos · inicia sesión con tu usuario
         </p>
+
+        {porInactividad && !loginError && (
+          <div className="status-pill warn" style={{ display: 'block', marginBottom: 14 }}>
+            Su sesión se cerró por inactividad. Vuelva a iniciar sesión.
+          </div>
+        )}
 
         {loginError && (
           <div className="status-pill warn" style={{ display: 'block', marginBottom: 14 }}>
