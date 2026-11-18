@@ -2,36 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import logoMandame from '../assets/logo-mandame.png';
-
-// Si la foto salió horizontal (más ancha que alta — típico de sostener
-// el celular acostado sin querer al fotografiar una boleta), la gira
-// 90° a vertical antes de subirla. createImageBitmap con
-// imageOrientation:'from-image' ya aplica la rotación que traiga el
-// EXIF de la cámara, así que el ancho/alto que vemos acá es el real
-// "tal como se ve" la foto, no el crudo del sensor.
-async function enderezarSiEsHorizontal(archivo) {
-  if (!archivo.type.startsWith('image/') || archivo.type === 'image/heic' || archivo.type === 'image/heif') {
-    return archivo; // el HEIC se corrige en el servidor; acá solo tocamos lo que el navegador ya sabe decodificar
-  }
-  try {
-    const bitmap = await createImageBitmap(archivo, { imageOrientation: 'from-image' });
-    if (bitmap.width <= bitmap.height) return archivo; // ya es vertical o cuadrada, no se toca
-
-    const canvas = document.createElement('canvas');
-    canvas.width = bitmap.height;
-    canvas.height = bitmap.width;
-    const ctx = canvas.getContext('2d');
-    ctx.translate(canvas.width / 2, canvas.height / 2);
-    ctx.rotate(Math.PI / 2);
-    ctx.drawImage(bitmap, -bitmap.width / 2, -bitmap.height / 2);
-
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92));
-    if (!blob) return archivo;
-    return new File([blob], archivo.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' });
-  } catch {
-    return archivo; // si el navegador no soporta algo de esto, se sube la foto tal cual en vez de bloquear
-  }
-}
+import VistaPreviaBoleta from '../components/VistaPreviaBoleta';
 
 // Pantalla pública (sin sesión) a la que llega un motorista desde el
 // link que le comparte su supervisor por WhatsApp — no usa Layout ni
@@ -75,6 +46,17 @@ function guardarToken(valor) {
   }
 }
 
+// La fecha de la boleta viene dentro del token (no es secreta: solo se
+// usa para mostrar cómo quedará el nombre del archivo).
+function fechaDelToken(token) {
+  try {
+    const parte = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(parte)).fecha || '';
+  } catch {
+    return '';
+  }
+}
+
 export default function SubirBoletaPublico() {
   const [params] = useSearchParams();
   const tokenDeUrl = params.get('token') || leerTokenDeUrlCruda();
@@ -93,6 +75,7 @@ export default function SubirBoletaPublico() {
   const [subiendo, setSubiendo] = useState(false);
   const [errorSubida, setErrorSubida] = useState('');
   const [listo, setListo] = useState(false);
+  const [archivoElegido, setArchivoElegido] = useState(null);
   const inputCamaraRef = useRef(null);
   const inputGaleriaRef = useRef(null);
 
@@ -119,6 +102,7 @@ export default function SubirBoletaPublico() {
     setConfirmado(false);
     setErrorSubida('');
     setListo(false);
+    setArchivoElegido(null);
   }
 
   function volverALista() {
@@ -127,20 +111,24 @@ export default function SubirBoletaPublico() {
     setBusqueda('');
     setErrorSubida('');
     setListo(false);
+    setArchivoElegido(null);
   }
 
-  async function subirArchivo(archivoOriginal) {
+  // El token va en la dirección (?token=), no dentro del formulario: el
+  // servidor lo revisa antes de leer la foto y ahí todavía no ve el formulario.
+  async function subirArchivo(archivo, comentario) {
     setSubiendo(true);
     setErrorSubida('');
     try {
-      const archivo = await enderezarSiEsHorizontal(archivoOriginal);
       const formData = new FormData();
+      if (comentario) formData.append('comentario', comentario);
       formData.append('imagen', archivo);
-      formData.append('token', token);
       await api.post(`/boletas/publico/${seleccionado.motoristaId}`, formData, {
+        params: { token },
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       setListo(true);
+      setArchivoElegido(null);
     } catch (err) {
       setErrorSubida(err?.response?.data?.error || 'No se pudo subir la boleta.');
     } finally {
@@ -151,7 +139,10 @@ export default function SubirBoletaPublico() {
   function onArchivoSeleccionado(e) {
     const archivo = e.target.files?.[0];
     e.target.value = '';
-    if (archivo) subirArchivo(archivo);
+    if (archivo) {
+      setErrorSubida('');
+      setArchivoElegido(archivo);
+    }
   }
 
   return (
@@ -238,7 +229,22 @@ export default function SubirBoletaPublico() {
           </div>
         )}
 
-        {!cargando && !error && seleccionado && confirmado && !listo && (
+        {!cargando && !error && seleccionado && confirmado && !listo && archivoElegido && (
+          <>
+            <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 10, textAlign: 'center' }}>{seleccionado.nombre}</p>
+            <VistaPreviaBoleta
+              archivo={archivoElegido}
+              nombre={seleccionado.nombre}
+              fecha={fechaDelToken(token)}
+              subiendo={subiendo}
+              error={errorSubida}
+              onSubir={subirArchivo}
+              onOtraFoto={() => { setArchivoElegido(null); setErrorSubida(''); }}
+            />
+          </>
+        )}
+
+        {!cargando && !error && seleccionado && confirmado && !listo && !archivoElegido && (
           <div style={{ textAlign: 'center' }}>
             <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{seleccionado.nombre}</p>
             <p style={{ fontSize: 12.5, color: 'var(--text-2)', marginBottom: 16 }}>
@@ -268,7 +274,7 @@ export default function SubirBoletaPublico() {
               disabled={subiendo}
               onClick={() => inputCamaraRef.current?.click()}
             >
-              {subiendo ? 'Subiendo...' : '📷 Tomar foto'}
+              📷 Tomar foto
             </button>
             <button
               type="button"

@@ -4,6 +4,7 @@ import { useToast } from '../../context/ToastContext';
 import { api } from '../../api/client';
 import { hoyLocal } from '../../utils/fecha';
 import { mostrarPickerSiSePuede } from '../../utils/dom';
+import VistaPreviaBoleta from '../../components/VistaPreviaBoleta';
 
 export default function SubirBoleta() {
   const { usuario } = useAuth();
@@ -23,6 +24,8 @@ export default function SubirBoleta() {
   const [generandoLink, setGenerandoLink] = useState(false);
   const [linkGenerado, setLinkGenerado] = useState('');
   const [copiado, setCopiado] = useState(false);
+  const [preparando, setPreparando] = useState(null); // { archivo, motorista } mientras se ve la vista previa
+  const [errorSubida, setErrorSubida] = useState('');
   const inputArchivoRef = useRef(null);
   const motoristaObjetivoRef = useRef(null);
 
@@ -70,33 +73,47 @@ export default function SubirBoleta() {
       if (!confirmado) return;
     }
 
-    motoristaObjetivoRef.current = Number(motorista.motoristaId);
+    motoristaObjetivoRef.current = motorista;
     inputArchivoRef.current?.click();
   }
 
-  async function onArchivoSeleccionado(e) {
+  function onArchivoSeleccionado(e) {
     const archivo = e.target.files?.[0];
-    const motoristaId = motoristaObjetivoRef.current;
+    const motorista = motoristaObjetivoRef.current;
     e.target.value = '';
-    if (!archivo || motoristaId == null) return;
+    if (!archivo || !motorista) return;
+    setErrorSubida('');
+    setPreparando({ archivo, motorista });
+  }
 
+  async function subirPreparada(archivo, comentario) {
+    const motoristaId = Number(preparando.motorista.motoristaId);
     setSubiendoId(motoristaId);
+    setErrorSubida('');
     try {
       const formData = new FormData();
+      if (comentario) formData.append('comentario', comentario);
       formData.append('imagen', archivo);
       await api.post(`/boleta-imagen/${motoristaId}`, formData, {
         params: { fecha, sucursalId },
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       setMotoristas((prev) => prev?.map((m) => (
-        Number(m.motoristaId) === motoristaId ? { ...m, estado: 'CARGADA' } : m
+        Number(m.motoristaId) === motoristaId ? { ...m, estado: 'CARGADA', comentario } : m
       )) ?? prev);
+      setPreparando(null);
       mostrarToast('Boleta cargada correctamente.');
     } catch (err) {
-      mostrarToast(err?.response?.data?.error || 'No se pudo subir la boleta.', 'error');
+      setErrorSubida(err?.response?.data?.error || 'No se pudo subir la boleta.');
     } finally {
       setSubiendoId(null);
     }
+  }
+
+  function otraFoto() {
+    setPreparando(null);
+    setErrorSubida('');
+    inputArchivoRef.current?.click();
   }
 
   async function generarLink() {
@@ -224,6 +241,39 @@ export default function SubirBoleta() {
         onChange={onArchivoSeleccionado}
       />
 
+      {preparando && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(15,20,30,.55)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 70, padding: 16
+          }}
+          onClick={(e) => e.target === e.currentTarget && subiendoId === null && setPreparando(null)}
+        >
+          <div className="card" style={{ maxWidth: 460, width: '100%', maxHeight: '92vh', overflow: 'auto' }}>
+            <h3 style={{ marginTop: 0, marginBottom: 10 }}>{preparando.motorista.nombre}</h3>
+            <VistaPreviaBoleta
+              archivo={preparando.archivo}
+              nombre={preparando.motorista.nombre}
+              fecha={fecha}
+              subiendo={subiendoId !== null}
+              error={errorSubida}
+              onSubir={subirPreparada}
+              onOtraFoto={otraFoto}
+              textoOtraFoto="Elegir otra foto"
+            />
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ width: '100%', marginTop: 8 }}
+              disabled={subiendoId !== null}
+              onClick={() => setPreparando(null)}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
       {motoristas !== null && (
         <div className="card" style={{ marginTop: 16 }}>
           {motoristas.length === 0 ? (
@@ -256,7 +306,12 @@ export default function SubirBoleta() {
                     return (
                       <tr key={id}>
                         <td className="col-ocultar-movil">{m.codigo}</td>
-                        <td>{m.nombre}</td>
+                        <td>
+                          {m.nombre}
+                          {m.comentario && (
+                            <div style={{ fontSize: 11.5, color: 'var(--amber-dark)', marginTop: 2 }}>{m.comentario}</div>
+                          )}
+                        </td>
                         <td>
                           <span className={`status-pill ${cargada ? 'ok' : 'pending'}`}>
                             {cargada ? 'Cargada' : 'Pendiente'}

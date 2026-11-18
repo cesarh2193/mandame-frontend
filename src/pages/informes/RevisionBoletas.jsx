@@ -176,6 +176,11 @@ function TarjetaBoleta({ fila }) {
         <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>
           {formatearFechaDisplay(fila.fecha)} · Repartos: {fila.cantidadRepartos ?? 0}
         </div>
+        {fila.comentario && (
+          <div style={{ fontSize: 12, marginTop: 6, padding: '4px 8px', borderRadius: 6, background: 'var(--amber-light)', color: 'var(--amber-dark)', wordBreak: 'break-word' }}>
+            {fila.comentario}
+          </div>
+        )}
         {fila.tieneBoleta && (
           <button type="button" className="btn btn-ghost" style={{ marginTop: 8 }} onClick={verCompleta}>
             Ver completa
