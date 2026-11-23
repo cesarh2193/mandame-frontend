@@ -71,7 +71,10 @@ export function AuthProvider({ children }) {
     const token = getToken();
     if (token) {
       fetch(`${api.defaults.baseURL}/auth/logout`, {
-        method: 'POST', headers: { Authorization: `Bearer ${token}` }, keepalive: true
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ motivo: 'inactividad' }),
+        keepalive: true
       }).catch(() => {});
     }
     setToken(null);
